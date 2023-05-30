@@ -1,29 +1,19 @@
 package eu.solven.territory;
 
+import lombok.Data;
+
+@Data
 public class TwoDimensionPosition implements ICellPosition, IIsRectangle {
-	final int x;
-	final int y;
-
-	public TwoDimensionPosition(int x, int y) {
-		this.x = x;
-		this.y = y;
-	}
-
 	/**
 	 * 
 	 * @return coordinate along width
 	 */
-	public int getX() {
-		return x;
-	}
-
+	final int x;
 	/**
 	 * 
 	 * @return coordinate along height
 	 */
-	public int getY() {
-		return y;
-	}
+	final int y;
 
 	@Override
 	public int getWidth() {
@@ -33,5 +23,14 @@ public class TwoDimensionPosition implements ICellPosition, IIsRectangle {
 	@Override
 	public int getHeight() {
 		return getY();
+	}
+
+	@Override
+	public ICellPosition shift(ICellPosition cellPosition) {
+		if (cellPosition instanceof TwoDimensionPosition other) {
+			return new TwoDimensionPosition(x + other.getX(), y + other.getY());
+		} else {
+			throw new IllegalArgumentException("!2D");
+		}
 	}
 }

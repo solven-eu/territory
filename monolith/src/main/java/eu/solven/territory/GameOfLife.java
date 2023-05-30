@@ -9,6 +9,7 @@ package eu.solven.territory;
 // https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life
 public class GameOfLife implements IExpansionCycleRule {
 
+	public static final int OFF_WORLD = -1;
 	public static final int DEAD = 0;
 	public static final int LIVE = 1;
 
@@ -24,10 +25,12 @@ public class GameOfLife implements IExpansionCycleRule {
 			// Assert the center of the window is indeed a live cell
 			assert windowBuffer.getCenter() == LIVE;
 
-			if (windowBuffer.count(LIVE) <= 1) {
+			// Any live cell with 2 neighbours remains live
+			long liveInAreaExcludingSelf = windowBuffer.count(LIVE) - 1;
+			if (liveInAreaExcludingSelf <= 1) {
 				// Any live cell with fewer than two live neighbours dies, as if by underpopulation.
 				copy.setValue(position, DEAD);
-			} else if (windowBuffer.count(LIVE) >= 3) {
+			} else if (liveInAreaExcludingSelf >= 3) {
 				// Any live cell with more than three live neighbours dies, as if by overpopulation.
 				copy.setValue(position, DEAD);
 			}

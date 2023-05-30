@@ -1,5 +1,6 @@
 package eu.solven.territory;
 
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 /**
@@ -15,13 +16,33 @@ public class RectangleWindow implements IMapWindow, IIsRectangle {
 	final int width;
 	final int height;
 
+	/**
+	 * 
+	 * @param window
+	 * @param halfWidth
+	 *            if 0, we are empty. If 1, we are centered on a single point.
+	 * @param halfHeight
+	 *            if 0, we are empty. If 1, we are centered on a single point.
+	 */
 	public RectangleWindow(int[] window, int halfWidth, int halfHeight) {
+		this.width = halfToFull(halfWidth);
+		this.height = halfToFull(halfHeight);
+		if (halfWidth == 0) {
+			assert window.length == 0;
+		} else if (halfHeight == 0) {
+			assert window.length == 0;
+		} else {
+			assert window.length == width * height;
+		}
 		this.window = window;
 
-		this.width = 1 + 2 * halfWidth;
-		this.height = 1 + 2 * halfHeight;
+	}
 
-		assert window.length == width * height;
+	private static int halfToFull(int half) {
+		if (half == 0) {
+			return 0;
+		}
+		return 1 + 2 * (half - 1);
 	}
 
 	@Override
@@ -44,22 +65,45 @@ public class RectangleWindow implements IMapWindow, IIsRectangle {
 
 	@Override
 	public long count(int predicate) {
-		return IntStream.of(window).filter(i -> window[i] == predicate).count();
+		return IntStream.of(window).filter(i -> i == predicate).count();
 	}
 
 	public static IMapWindow empty(int halfWidth, int halfHeight) {
-		int width = 1 + 2 * halfWidth;
-		int height = 1 + 2 * halfHeight;
+		int width = halfToFull(halfWidth);
+		int height = halfToFull(halfHeight);
 		return new RectangleWindow(new int[width * height], halfWidth, halfHeight);
 	}
 
 	public void forEachCoordinate(IntIntConsumer consumer) {
-		// TODO Auto-generated method stub
+		int halfWidth = (getWidth() - 1) / 2;
+		int halfHeight = (getHeight() - 1) / 2;
 
+		for (int x = -halfWidth; x <= halfWidth; x++) {
+			for (int y = -halfHeight; y <= halfHeight; y++) {
+				consumer.accept(x, y);
+			}
+		}
 	}
 
-	public void setValue(int x, int y, int i) {
-		window[x * y] = i;
+	@Override
+	public void forEachCell(Consumer<ICellPosition> object) {
+		forEachCoordinate((x, y) -> object.accept(new TwoDimensionPosition(x, y)));
+	}
+
+	/**
+	 * 
+	 * @param centeredX
+	 *            within [-halfWidth,halfWidth]
+	 * @param centeredY
+	 * @param value
+	 */
+	public void setValue(int centeredX, int centeredY, int value) {
+		int halfWidth = (getWidth() - 1) / 2;
+		int halfHeight = (getHeight() - 1) / 2;
+
+		int shiftedX = halfWidth + centeredX;
+		int shiftedY = halfHeight + centeredY;
+		window[shiftedX + width * shiftedY] = value;
 	}
 
 }

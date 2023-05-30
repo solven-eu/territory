@@ -8,4 +8,6 @@ package eu.solven.territory;
  */
 public interface ICellPosition {
 
+	ICellPosition shift(ICellPosition cellPosition);
+
 }
