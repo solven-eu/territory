@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+	    <artifactId>spring-boot-starter-parent</artifactId>
+	    <version>3.1.0</version>
+		<!-- http://stackoverflow.com/questions/6003831/parent-relativepath-points-at-my-com-mycompanymyproject-instead-of-org-apache -->
+		<relativePath />
+	</parent>
+
+		<groupId>io.github.solven-eu.territory</groupId>
+	<artifactId>ancestor</artifactId>
+	<version>1.0-SNAPSHOT</version>
+	<packaging>pom</packaging>
+
+	<inceptionYear>2018</inceptionYear>
+
+	<scm>
+		<connection>scm:git:ssh://git@github.com/solven-eu/territory.git</connection>
+		<!-- developperConnection is in top module, where maven release plugin is called -->
+		<tag>HEAD</tag>
+		<url>https://github.com/solven-eu/territory</url>
+	</scm>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.source>17</maven.compiler.source>
+		<maven.compiler.target>17</maven.compiler.target>
+		<maven.compiler.release>17</maven.compiler.release>
+
+		<!-- Skip javadoc, especially as it would break mvn:release -->
+		<maven.javadoc.skip>true</maven.javadoc.skip>
+		<!-- We deploy only into lambda -->
+		<maven.deploy.skip>true</maven.deploy.skip>
+
+		<!-- By default (i.e. in local environments), check for code formatting AFTER trying automatic fixes. -->
+		<!-- We suppose the developper would see the fixed and include them in his commit. -->
+		<!-- In the CI, we check BEFORE automatic fixes as the CI should report early invalid code -->
+		<staticChecks>process-sources</staticChecks>
+		<!-- SpotBugs works on bytecode, hence require compilation to be done -->
+		<!-- http://maven.apache.org/ref/3.8.1/maven-core/lifecycles.html -->
+		<!-- https://github.com/spotbugs/spotbugs-maven-plugin/issues/75 -->
+		<staticChecksOverBytecode>process-classes</staticChecksOverBytecode>
+
+		<!-- By default (i.e. in local environments), check for code linting AFTER trying automatic fixes. -->
+		<lintGoal>lint-autofix</lintGoal>
+
+		<cleanthat.version>2.14</cleanthat.version>
+
+		<spotless.version>2.36.0</spotless.version>
+		
+		<pepper.version>4.5</pepper.version>
+	</properties>
+
+	<build>
+		<pluginManagement>
+			<plugins>
+
+				<plugin>
+					<!-- mvn io.github.solven-eu.cleanthat:cleanthat-maven-plugin:cleanthat -->
+					<groupId>io.github.solven-eu.cleanthat</groupId>
+					<artifactId>cleanthat-maven-plugin</artifactId>
+					<version>${cleanthat.version}</version>
+					<configuration>
+						<!-- We encounter some exceptions for now -->
+						<skip>true</skip>
+					</configuration>
+					<executions>
+						<execution>
+							<id>Clean the code</id>
+							<goals>
+								<goal>cleanthat</goal>
+							</goals>
+						</execution>
+						<execution>
+							<id>Check the code is clean</id>
+							<goals>
+								<goal>check</goal>
+							</goals>
+							<phase>${staticChecks}</phase>
+						</execution>
+					</executions>
+				</plugin>
+
+				<plugin>
+					<!-- mvn com.diffplug.spotless:spotless-maven-plugin:apply -->
+					<!-- mvn com.diffplug.spotless:spotless-maven-plugin:check -->
+					<groupId>com.diffplug.spotless</groupId>
+					<artifactId>spotless-maven-plugin</artifactId>
+					<version>${spotless.version}</version>
+					<configuration>
+						<!-- optional: limit format enforcement to just the files changed by this feature branch -->
+						<ratchetFrom>origin/master</ratchetFrom>
+
+						<formats>
+							<!-- you can define as many formats as you want, each is independent -->
+							<format>
+								<!-- define the files to apply to -->
+								<includes>
+									<include>.gitignore</include>
+								</includes>
+								<!-- define the steps to apply to those files -->
+								<trimTrailingWhitespace />
+								<endWithNewline />
+								<indent>
+									<tabs>true</tabs>
+									<spacesPerTab>4</spacesPerTab>
+								</indent>
+							</format>
+						</formats>
+
+						<pom>
+							<includes>
+								<include>pom.xml</include>
+							</includes>
+
+							<!-- https://github.com/diffplug/spotless/tree/main/plugin-maven#sortpom -->
+							<sortPom>
+								<!-- We like empty elements, while plugin default configuration would expand them -->
+								<expandEmptyElements>false</expandEmptyElements>
+
+								<!-- https://github.com/Ekryd/sortpom/issues/75 -->
+								<spaceBeforeCloseEmptyElement>true</spaceBeforeCloseEmptyElement>
+
+								<!-- https://github.com/Ekryd/sortpom/wiki/Parameters#for-both-the-sort-and-verify-goal -->
+								<!-- -1 means '\t' -->
+								<nrOfIndentSpace>-1</nrOfIndentSpace>
+							</sortPom>
+						</pom>
+
+						<markdown>
+							<includes>
+								<!-- You have to set the target manually -->
+								<include>*.md</include>
+								<include>src/**/*.md</include>
+							</includes>
+
+							<flexmark />
+						</markdown>
+
+						<java>
+							<excludes>
+								<exclude>**/generated/**</exclude>
+							</excludes>
+
+							<cleanthat>
+								<version>${cleanthat.version}</version>
+								<mutators>
+									<mutator>SafeAndConsensual</mutator>
+									<mutator>SafeButNotConsensual</mutator>
+									<mutator>SafeButControversial</mutator>
+									<mutator>Guava</mutator>
+								</mutators>
+								<includeDraft>true</includeDraft>
+							</cleanthat>
+
+							<removeUnusedImports />
+
+							<importOrder>
+								<file>${maven.multiModuleProjectDirectory}/build-tools/src/main/resources/style/eclipse.importorder</file>
+								<!--order>java,javax,org,com</order-->
+							</importOrder>
+
+							<eclipse>
+								<!-- From Pepper -->
+								<file>${maven.multiModuleProjectDirectory}/build-tools/src/main/resources/style/eclipse_java_code_formatter.xml</file>
+							</eclipse>
+						</java>
+
+						<json>
+							<includes>
+								<include>*.json</include>
+								<include>src/**/*.json</include>
+							</includes>
+							<excludes>
+								<exclude>package-lock.json</exclude>
+							</excludes>
+
+							<indent>
+								<tabs>true</tabs>
+								<spacesPerTab>4</spacesPerTab>
+							</indent>
+
+							<gson>
+								<sortByKeys>true</sortByKeys>
+							</gson>
+						</json>
+					</configuration>
+
+					<dependencies>
+						<dependency>
+							<groupId>io.github.solven-eu.pepper</groupId>
+							<artifactId>pepper-static</artifactId>
+							<version>${pepper.version}</version>
+							<scope>runtime</scope>
+						</dependency>
+					</dependencies>
+					<executions>
+						<!-- https://github.com/diffplug/spotless/tree/main/plugin-maven#binding-to-maven-phase -->
+						<execution>
+							<id>apply</id>
+							<goals>
+								<goal>apply</goal>
+							</goals>
+							<!-- runs at process-sources phase by default -->
+							<phase>process-sources</phase>
+						</execution>
+						<execution>
+							<id>check</id>
+							<goals>
+								<goal>check</goal>
+								<!-- runs at verify phase by default -->
+							</goals>
+							<phase>${staticChecks}</phase>
+						</execution>
+					</executions>
+				</plugin>
+
+			</plugins>
+		</pluginManagement>
+		<plugins>
+			<!-- formatters before checkers -->
+			<!-- CleanThat is disabled as it may corrupt the ClassLoader before Spotless (around org.eclipse.aether.util.ConfigUtils) -->
+			<!--			<plugin>-->
+			<!--				<groupId>io.github.solven-eu.cleanthat</groupId>-->
+			<!--				<artifactId>cleanthat-maven-plugin</artifactId>-->
+			<!-- CleanThat should be executed only in the top-directory -->
+			<!--				<inherited>false</inherited>-->
+			<!--			</plugin>-->
+			<plugin>
+				<!-- Ensure lint-fixers are executed before checkstyle/PMD, as it will automatically clean some style rules -->
+				<!-- https://stackoverflow.com/questions/8243912/changing-the-order-of-maven-plugin-execution -->
+				<groupId>com.diffplug.spotless</groupId>
+				<artifactId>spotless-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+
+	<profiles>
+		<profile>
+			<!-- skip everything, test, quality, format,... -->
+			<!-- This profile is deprecated, and its usage should be replaced by -Pfast -->
+			<id>skipStyle</id>
+			<properties>
+				<!-- Code style -->
+				<checkstyle.skip>true</checkstyle.skip>
+				<pmd.skip>true</pmd.skip>
+				<cpd.skip>true</cpd.skip>
+				<spotbugs.skip>true</spotbugs.skip>
+				<maven.javadoc.skip>true</maven.javadoc.skip>
+				<license.skip>true</license.skip>
+				<formatter.skip>true</formatter.skip>
+				<impsort.skip>true</impsort.skip>
+				<cleanthat.skip>true</cleanthat.skip>
+				<skip.npm.style>true</skip.npm.style>
+				<spotless.apply.skip>true</spotless.apply.skip>
+				<spotless.check.skip>true</spotless.check.skip>
+
+				<!-- Dependency will be checked with style -->
+				<enforcer.skip>true</enforcer.skip>
+			</properties>
+		</profile>
+		<profile>
+			<!-- If tests are skipped, we also want to skip Jacoco -->
+			<id>skipTests</id>
+			<activation>
+				<!-- Triggered by -DskipTests -->
+				<property>
+					<name>skipTests</name>
+				</property>
+			</activation>
+			<properties>
+				<!-- Skip static-analysis -->
+				<jacoco.skip>true</jacoco.skip>
+			</properties>
+		</profile>
+
+		<profile>
+			<!-- Used to recompile quickly only the core components -->
+			<id>fast</id>
+			<properties>
+				<!-- Code style -->
+				<checkstyle.skip>true</checkstyle.skip>
+				<pmd.skip>true</pmd.skip>
+				<cpd.skip>true</cpd.skip>
+				<spotbugs.skip>true</spotbugs.skip>
+				<maven.javadoc.skip>true</maven.javadoc.skip>
+				<license.skip>true</license.skip>
+				<formatter.skip>true</formatter.skip>
+				<impsort.skip>true</impsort.skip>
+				<cleanthat.skip>true</cleanthat.skip>
+				<skip.npm.style>true</skip.npm.style>
+				<spotless.apply.skip>true</spotless.apply.skip>
+				<spotless.check.skip>true</spotless.check.skip>
+
+				<!-- Dependency will be checked with style -->
+				<enforcer.skip>true</enforcer.skip>
+
+				<skipTests>true</skipTests>
+				<skipITs>true</skipITs>
+				<jacoco.skip>true</jacoco.skip>
+			</properties>
+		</profile>
+	</profiles>
+</project>
