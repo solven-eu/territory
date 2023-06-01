@@ -5,17 +5,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.google.common.eventbus.EventBus;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.indvd00m.ascii.render.Region;
 import com.indvd00m.ascii.render.Render;
 import com.indvd00m.ascii.render.api.ICanvas;
@@ -30,19 +32,23 @@ import com.indvd00m.ascii.render.elements.plot.api.IPlotPoint;
 import com.indvd00m.ascii.render.elements.plot.misc.PlotPoint;
 
 import eu.solven.territory.GameContext;
-import eu.solven.territory.GameOfLife;
+import eu.solven.territory.IAnimal;
+import eu.solven.territory.IExpansionCycleRule;
 import eu.solven.territory.IMapWindow;
 import eu.solven.territory.IPlayerOccupation;
 import eu.solven.territory.RectangleOccupation;
 import eu.solven.territory.SquareMap;
 import eu.solven.territory.TwoDimensionPosition;
+import eu.solven.territory.game_of_life.GameOfLife;
+import eu.solven.territory.game_of_life.LiveCell;
 import eu.solven.territory.render.ShowSwing;
 
 @RestController
 public class HelloController {
+	private static final Logger LOGGER = LoggerFactory.getLogger(HelloController.class);
 
 	protected Map<String, Integer> playerToId = new ConcurrentHashMap<>();
-	protected Map<String, IPlayerOccupation> playerToOccupation = new ConcurrentHashMap<>();
+	protected Map<String, IPlayerOccupation<?>> playerToOccupation = new ConcurrentHashMap<>();
 
 	final String beforePre = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n"
 			+ "\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> \n"
@@ -63,8 +69,14 @@ public class HelloController {
 		swing("anonymous");
 
 		Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
-			updateAndGetNextTurn("anonymous");
+			try {
+				GameOfLife gameOfLife = new GameOfLife();
+				updateAndGetNextTurn(gameOfLife, "anonymous");
+			} catch (RuntimeException e) {
+				LOGGER.warn("ARG", e);
+			}
 		}, 1, 1, TimeUnit.SECONDS);
+
 	}
 
 	@GetMapping("/")
@@ -87,20 +99,20 @@ public class HelloController {
 
 	@GetMapping("/turn")
 	public void nextTurn(@RequestParam(name = "playerName", defaultValue = "anonymous") String playerName) {
-		updateAndGetNextTurn(playerName);
+		GameOfLife gameOfLife = new GameOfLife();
+		updateAndGetNextTurn(gameOfLife, playerName);
 	}
 
-	private IPlayerOccupation updateAndGetNextTurn(String playerName) {
+	private <A extends IAnimal> IPlayerOccupation<A> updateAndGetNextTurn(IExpansionCycleRule<A> gameOfLife,
+			String playerName) {
 		SquareMap squareMap = new SquareMap(20);
-
-		GameOfLife gameOfLife = new GameOfLife();
 
 		// int id = playerToId.computeIfAbsent(playerName, p -> playerToId.size());
 
-		IPlayerOccupation singlePlayerOccupation =
-				playerToOccupation.computeIfAbsent(playerName, player -> initialOccupation(squareMap));
+		IPlayerOccupation<A> singlePlayerOccupation = (IPlayerOccupation<A>) playerToOccupation
+				.computeIfAbsent(playerName, player -> initialOccupation(squareMap));
 
-		IPlayerOccupation playerNewSituation = gameOfLife.cycle(singlePlayerOccupation);
+		IPlayerOccupation<A> playerNewSituation = gameOfLife.cycle(singlePlayerOccupation);
 		playerToOccupation.put(playerName, playerNewSituation);
 
 		eventBus.post(playerNewSituation);
@@ -111,7 +123,8 @@ public class HelloController {
 	@GetMapping("/ascii")
 	public String ascii(@RequestParam(name = "playerName", defaultValue = "anonymous") String playerName) {
 		SquareMap squareMap = new SquareMap(20);
-		IPlayerOccupation playerNewSituation = updateAndGetNextTurn(playerName);
+		GameOfLife gameOfLife = new GameOfLife();
+		IPlayerOccupation<?> playerNewSituation = updateAndGetNextTurn(gameOfLife, playerName);
 
 		String s = generateAscii(squareMap, playerNewSituation);
 		// System.out.println(s);
@@ -124,21 +137,21 @@ public class HelloController {
 		return beforePre + pre + afterPre;
 	}
 
-	private RectangleOccupation initialOccupation(SquareMap squareMap) {
-		RectangleOccupation empty = RectangleOccupation.empty(squareMap);
+	private RectangleOccupation<LiveCell> initialOccupation(SquareMap squareMap) {
+		RectangleOccupation<LiveCell> empty = RectangleOccupation.empty(squareMap);
 
-		empty.setValue(new TwoDimensionPosition(5, 5), 1);
-		empty.setValue(new TwoDimensionPosition(5, 6), 1);
-		empty.setValue(new TwoDimensionPosition(5, 7), 1);
+		empty.setValue(new TwoDimensionPosition(5, 5), LiveCell.LIVE);
+		empty.setValue(new TwoDimensionPosition(5, 6), LiveCell.LIVE);
+		empty.setValue(new TwoDimensionPosition(5, 7), LiveCell.LIVE);
 
 		return empty;
 	}
 
-	private String generateAscii(SquareMap squareMap, IPlayerOccupation playerNewSituation) {
+	private <A extends IAnimal> String generateAscii(SquareMap squareMap, IPlayerOccupation<A> playerNewSituation) {
 		List<IPlotPoint> points = new ArrayList<>();
 
 		// Print each alive cell individually
-		IMapWindow windowBuffer = playerNewSituation.makeWindowBuffer(1);
+		IMapWindow<A> windowBuffer = playerNewSituation.makeWindowBuffer(1);
 		playerNewSituation.forEachLiveCell(windowBuffer, cellPosition -> {
 
 			if (cellPosition instanceof TwoDimensionPosition twoDimPosition) {

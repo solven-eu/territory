@@ -1,6 +1,7 @@
 package eu.solven.territory;
 
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * Typically, a fraction of the {@link ITerritoryMap} within given cell can interact with. It suggests a cell can only
@@ -9,21 +10,23 @@ import java.util.function.Consumer;
  * @author Benoit Lacelle
  *
  */
-public interface IMapWindow {
+public interface IMapWindow<A extends IAnimal> {
 
 	/**
 	 * 
 	 * @return the value at the center of the {@link IMapWindow}
 	 */
-	int getCenter();
+	A getCenter();
 
 	/**
 	 * 
 	 * @param predicate
 	 * @return how many cells in the {@link IMapWindow} matches given value
 	 */
-	long count(int predicate);
+	long count(Predicate<A> predicate);
 
 	void forEachCell(Consumer<ICellPosition> object);
+
+	void setOffWorld();
 
 }

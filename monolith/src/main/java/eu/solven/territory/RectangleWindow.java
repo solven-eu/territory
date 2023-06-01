@@ -1,7 +1,13 @@
 package eu.solven.territory;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Consumer;
-import java.util.stream.IntStream;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+
+import eu.solven.territory.game_of_life.GameOfLife;
+import eu.solven.territory.game_of_life.LiveCell;
 
 /**
  * A centered rectangle {@link IMapWindow}. It is guaranteed to have odd-size width and height, to have an unambiguous
@@ -10,8 +16,8 @@ import java.util.stream.IntStream;
  * @author Benoit Lacelle
  *
  */
-public class RectangleWindow implements IMapWindow, IIsRectangle {
-	final int[] window;
+public class RectangleWindow<A extends IAnimal> implements IMapWindow<A>, IIsRectangle {
+	final List<A> window;
 
 	final int width;
 	final int height;
@@ -24,15 +30,15 @@ public class RectangleWindow implements IMapWindow, IIsRectangle {
 	 * @param halfHeight
 	 *            if 0, we are empty. If 1, we are centered on a single point.
 	 */
-	public RectangleWindow(int[] window, int halfWidth, int halfHeight) {
+	public RectangleWindow(List<A> window, int halfWidth, int halfHeight) {
 		this.width = halfToFull(halfWidth);
 		this.height = halfToFull(halfHeight);
 		if (halfWidth == 0) {
-			assert window.length == 0;
+			assert window.size() == 0;
 		} else if (halfHeight == 0) {
-			assert window.length == 0;
+			assert window.size() == 0;
 		} else {
-			assert window.length == width * height;
+			assert window.size() == width * height;
 		}
 		this.window = window;
 
@@ -56,22 +62,24 @@ public class RectangleWindow implements IMapWindow, IIsRectangle {
 	}
 
 	@Override
-	public int getCenter() {
-		if (window.length % 2 != 1) {
+	public A getCenter() {
+		if (window.size() % 2 != 1) {
 			throw new IllegalStateException("!centered");
 		}
-		return window[window.length / 2];
+		return window.get(window.size() / 2);
 	}
 
 	@Override
-	public long count(int predicate) {
-		return IntStream.of(window).filter(i -> i == predicate).count();
+	public long count(Predicate<A> predicate) {
+		return window.stream().filter(i -> predicate.test(i)).count();
 	}
 
-	public static IMapWindow empty(int halfWidth, int halfHeight) {
+	public static <A extends IAnimal> IMapWindow<A> empty(int halfWidth, int halfHeight) {
 		int width = halfToFull(halfWidth);
 		int height = halfToFull(halfHeight);
-		return new RectangleWindow(new int[width * height], halfWidth, halfHeight);
+		Object[] raw = new Object[width * height];
+		List<A> asList = (List<A>) Arrays.asList(raw);
+		return new RectangleWindow<A>(asList, halfWidth, halfHeight);
 	}
 
 	public void forEachCoordinate(IntIntConsumer consumer) {
@@ -97,13 +105,19 @@ public class RectangleWindow implements IMapWindow, IIsRectangle {
 	 * @param centeredY
 	 * @param value
 	 */
-	public void setValue(int centeredX, int centeredY, int value) {
+	// @Override
+	public void setValue(int centeredX, int centeredY, A value) {
 		int halfWidth = (getWidth() - 1) / 2;
 		int halfHeight = (getHeight() - 1) / 2;
 
 		int shiftedX = halfWidth + centeredX;
 		int shiftedY = halfHeight + centeredY;
-		window[shiftedX + width * shiftedY] = value;
+		window.set(shiftedX + width * shiftedY, value);
+	}
+
+	@Override
+	public void setOffWorld() {
+		setValue(width, height, null);
 	}
 
 }

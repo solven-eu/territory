@@ -1,6 +1,9 @@
 package eu.solven.territory;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -8,6 +11,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Sets;
+
+import eu.solven.territory.game_of_life.GameOfLife;
+import eu.solven.territory.game_of_life.LiveCell;
 
 /**
  * A basic Rectangle {@link IPlayerOccupation}.
@@ -17,46 +23,48 @@ import com.google.common.collect.Sets;
  * @author Benoit Lacelle
  *
  */
-public class RectangleOccupation implements IPlayerOccupation {
+public class RectangleOccupation<A extends IAnimal> implements IPlayerOccupation<A> {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RectangleOccupation.class);
 
 	final IIsRectangle map;
 	// [0 -> width] holds the first/bottom row
-	final int[] raw;
+	final List<A> raw;
 
-	public RectangleOccupation(IIsRectangle map, int[] raw) {
+	public RectangleOccupation(IIsRectangle map, List<A> raw) {
 		this.map = map;
 		this.raw = raw;
 	}
 
-	public static RectangleOccupation empty(SquareMap map) {
+	public static <A extends IAnimal> RectangleOccupation<A> empty(SquareMap map) {
 		if (!map.isRectangleLike()) {
 			throw new IllegalArgumentException("!rectangle");
 		}
 
 		SquareMap squareMap = (SquareMap) map;
-		int[] asArray = new int[squareMap.getWidth() * squareMap.getHeight()];
+		List<A> asArray = (List<A>) Arrays.asList(new Object[squareMap.getWidth() * squareMap.getHeight()]);
 
-		return new RectangleOccupation(map, asArray);
+		return new RectangleOccupation<>(map, asArray);
 	}
 
 	@Override
-	public IPlayerOccupation mutableCopy() {
-		return new RectangleOccupation(map, raw.clone());
+	public IPlayerOccupation<A> mutableCopy() {
+		return new RectangleOccupation<>(map, new ArrayList<>(raw));
 	}
 
 	@Override
-	public IMapWindow makeWindowBuffer(int radius) {
+	public IMapWindow<A> makeWindowBuffer(int radius) {
 		return RectangleWindow.empty(radius, radius);
 	}
 
 	@Override
-	public void forEachLiveCell(IMapWindow windowBuffer, Consumer<ICellPosition> cellPositionConsumer) {
-		if (windowBuffer instanceof RectangleWindow rectangleWindow) {
+	public void forEachLiveCell(IMapWindow<A> windowBuffer, Consumer<ICellPosition> cellPositionConsumer) {
+		if (windowBuffer instanceof RectangleWindow<A> rectangleWindow) {
 			for (int x = 0; x < map.getWidth(); x++) {
 				for (int y = 0; y < map.getHeight(); y++) {
 					int oneDimensionalIndex = x + map.getWidth() * y;
-					if (raw[oneDimensionalIndex] == GameOfLife.LIVE) {
+					// May be null, if outOfWorld
+					A currentCell = raw.get(oneDimensionalIndex);
+					if (LiveCell.LIVE.equals(currentCell)) {
 						TwoDimensionPosition position = new TwoDimensionPosition(x, y);
 						fill(position, rectangleWindow);
 						cellPositionConsumer.accept(position);
@@ -71,10 +79,10 @@ public class RectangleOccupation implements IPlayerOccupation {
 
 	@Override
 	public void forEachDeadButNearLiveCell(int radius,
-			IMapWindow windowBuffer,
+			IMapWindow<A> windowBuffer,
 			Consumer<ICellPosition> cellPositionConsumer) {
 		// assert windowBuffer.getRadius() >= radius
-		
+
 		Set<ICellPosition> live = new HashSet<>();
 		Set<ICellPosition> nearLive = new HashSet<>();
 
@@ -87,7 +95,7 @@ public class RectangleOccupation implements IPlayerOccupation {
 			windowBuffer.forEachCell(c -> nearLive.add(c.shift(cellPosition)));
 		});
 
-		if (windowBuffer instanceof RectangleWindow rectangleWindow) {
+		if (windowBuffer instanceof RectangleWindow<A> rectangleWindow) {
 			Sets.difference(nearLive, live).stream().map(TwoDimensionPosition.class::cast).forEach(deadButNearLive -> {
 				fill(deadButNearLive, rectangleWindow);
 				cellPositionConsumer.accept(deadButNearLive);
@@ -97,7 +105,7 @@ public class RectangleOccupation implements IPlayerOccupation {
 		}
 	}
 
-	private void fill(TwoDimensionPosition position, RectangleWindow windowBuffer) {
+	private void fill(TwoDimensionPosition position, RectangleWindow<A> windowBuffer) {
 		int x = position.getX();
 		int y = position.getY();
 
@@ -106,9 +114,9 @@ public class RectangleOccupation implements IPlayerOccupation {
 			int shiftedY = y + shiftY;
 
 			if (shiftedX < 0 || shiftedX >= map.getWidth() || shiftedY < 0 || shiftedY >= map.getHeight()) {
-				windowBuffer.setValue(shiftX, shiftY, GameOfLife.OFF_WORLD);
+				windowBuffer.setOffWorld();
 			} else {
-				windowBuffer.setValue(shiftX, shiftY, raw[shiftedX + map.getWidth() * shiftedY]);
+				windowBuffer.setValue(shiftX, shiftY, raw.get(shiftedX + map.getWidth() * shiftedY));
 			}
 
 		});
@@ -116,14 +124,14 @@ public class RectangleOccupation implements IPlayerOccupation {
 	}
 
 	@Override
-	public void setValue(ICellPosition position, int cellValue) {
+	public void setValue(ICellPosition position, A cellValue) {
 		if (position instanceof IIsRectangle rectangle) {
 			int x = rectangle.getWidth();
 			int y = rectangle.getHeight();
 			LOGGER.debug("We turn {} to {}", position, cellValue);
 
 			int oneDimensionalIndex = x + map.getWidth() * y;
-			this.raw[oneDimensionalIndex] = cellValue;
+			this.raw.set(oneDimensionalIndex, cellValue);
 		} else {
 			throw new IllegalArgumentException("!rectangle");
 		}
