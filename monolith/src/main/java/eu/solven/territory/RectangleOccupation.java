@@ -73,6 +73,8 @@ public class RectangleOccupation implements IPlayerOccupation {
 	public void forEachDeadButNearLiveCell(int radius,
 			IMapWindow windowBuffer,
 			Consumer<ICellPosition> cellPositionConsumer) {
+		// assert windowBuffer.getRadius() >= radius
+		
 		Set<ICellPosition> live = new HashSet<>();
 		Set<ICellPosition> nearLive = new HashSet<>();
 
@@ -118,7 +120,7 @@ public class RectangleOccupation implements IPlayerOccupation {
 		if (position instanceof IIsRectangle rectangle) {
 			int x = rectangle.getWidth();
 			int y = rectangle.getHeight();
-			LOGGER.info("We turn {} to {}", position, cellValue);
+			LOGGER.debug("We turn {} to {}", position, cellValue);
 
 			int oneDimensionalIndex = x + map.getWidth() * y;
 			this.raw[oneDimensionalIndex] = cellValue;
