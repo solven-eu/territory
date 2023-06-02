@@ -25,7 +25,7 @@ public class GameOfLife implements IExpansionCycleRule<LiveCell> {
 		int gameOfLifeRadius = 1;
 		IMapWindow<LiveCell> windowBuffer = occupation.makeWindowBuffer(includeSelfRadius + gameOfLifeRadius);
 
-		occupation.forEachLiveCell(windowBuffer, position -> {
+		occupation.forEachLiveCell(LiveCell.class, windowBuffer, position -> {
 			// Assert the center of the window is indeed a live cell
 			assert windowBuffer.getCenter().getAsInt() == LIVE;
 
@@ -33,16 +33,16 @@ public class GameOfLife implements IExpansionCycleRule<LiveCell> {
 			long liveInAreaExcludingSelf = windowBuffer.count(i -> i != null && i.getAsInt() == LIVE) - 1;
 			if (liveInAreaExcludingSelf <= 1) {
 				// Any live cell with fewer than two live neighbours dies, as if by underpopulation.
-				copy.setValue(position, LiveCell.DEAD);
+				copy.setDead(position);
 			} else if (liveInAreaExcludingSelf >= 3) {
 				// Any live cell with more than three live neighbours dies, as if by overpopulation.
-				copy.setValue(position, LiveCell.DEAD);
+				copy.setDead(position);
 			}
 		});
 
-		occupation.forEachDeadButNearLiveCell(gameOfLifeRadius, windowBuffer, position -> {
+		occupation.forEachDeadButNearLiveCell(LiveCell.class, gameOfLifeRadius, windowBuffer, position -> {
 			// Assert the center of the window is indeed a dead cell
-			assert windowBuffer.getCenter() == LiveCell.DEAD;
+			assert windowBuffer.getCenter() == null;
 
 			if (windowBuffer.count(i -> i != null && i.getAsInt() == LIVE) == 3) {
 				// Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.

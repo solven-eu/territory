@@ -1,5 +1,5 @@
 package eu.solven.territory;
 
-public interface IAnimal {
+public interface IAnimal extends ICellMarker {
 
 }

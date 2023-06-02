@@ -1,4 +1,4 @@
-package eu.solven.territory.mvc;
+package eu.solven.territory.app;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;

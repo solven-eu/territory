@@ -12,9 +12,12 @@ public interface IPlayerOccupation<A extends IAnimal> {
 
 	IPlayerOccupation<A> mutableCopy();
 
-	void forEachLiveCell(IMapWindow<A> windowBuffer, Consumer<ICellPosition> cellPositionConsumer);
+	void forEachLiveCell(Class<? extends ICellMarker> marker,
+			IMapWindow<A> windowBuffer,
+			Consumer<ICellPosition> cellPositionConsumer);
 
-	void forEachDeadButNearLiveCell(int gameOfLifeRadius,
+	void forEachDeadButNearLiveCell(Class<? extends ICellMarker> marker,
+			int gameOfLifeRadius,
 			IMapWindow<A> windowBuffer,
 			Consumer<ICellPosition> cellPositionConsumer);
 
@@ -26,4 +29,6 @@ public interface IPlayerOccupation<A extends IAnimal> {
 	IMapWindow<A> makeWindowBuffer(int radius);
 
 	void setValue(ICellPosition position, A cellValue);
+
+	void setDead(ICellPosition position);
 }

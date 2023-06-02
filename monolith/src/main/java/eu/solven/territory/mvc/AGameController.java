@@ -4,9 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -34,21 +31,21 @@ import com.indvd00m.ascii.render.elements.plot.misc.PlotPoint;
 import eu.solven.territory.GameContext;
 import eu.solven.territory.IAnimal;
 import eu.solven.territory.IExpansionCycleRule;
+import eu.solven.territory.IGameRenderer;
 import eu.solven.territory.IMapWindow;
 import eu.solven.territory.IPlayerOccupation;
-import eu.solven.territory.RectangleOccupation;
-import eu.solven.territory.SquareMap;
-import eu.solven.territory.TwoDimensionPosition;
-import eu.solven.territory.game_of_life.GameOfLife;
-import eu.solven.territory.game_of_life.LiveCell;
 import eu.solven.territory.render.ShowSwing;
+import eu.solven.territory.two_dimensions.SquareMap;
+import eu.solven.territory.two_dimensions.TwoDimensionPosition;
 
 @RestController
-public class HelloController {
-	private static final Logger LOGGER = LoggerFactory.getLogger(HelloController.class);
+public abstract class AGameController<A extends IAnimal> {
+	private static final Logger LOGGER = LoggerFactory.getLogger(AGameController.class);
+
+	final SquareMap squareMap = new SquareMap(20);
 
 	protected Map<String, Integer> playerToId = new ConcurrentHashMap<>();
-	protected Map<String, IPlayerOccupation<?>> playerToOccupation = new ConcurrentHashMap<>();
+	protected Map<String, IPlayerOccupation<A>> playerToOccupation = new ConcurrentHashMap<>();
 
 	final String beforePre = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n"
 			+ "\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> \n"
@@ -63,21 +60,15 @@ public class HelloController {
 
 	final EventBus eventBus;
 
-	public HelloController(EventBus eventBus) {
+	public AGameController(EventBus eventBus) {
 		this.eventBus = eventBus;
-
-		swing("anonymous");
-
-		Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
-			try {
-				GameOfLife gameOfLife = new GameOfLife();
-				updateAndGetNextTurn(gameOfLife, "anonymous");
-			} catch (RuntimeException e) {
-				LOGGER.warn("ARG", e);
-			}
-		}, 1, 1, TimeUnit.SECONDS);
-
 	}
+
+	protected abstract Class<A> getAnimal();
+
+	protected abstract IExpansionCycleRule<A> getGame();
+
+	protected abstract IGameRenderer getRenderer();
 
 	@GetMapping("/")
 	public String index() {
@@ -89,9 +80,9 @@ public class HelloController {
 		// https://stackoverflow.com/questions/58040229/exception-in-thread-main-java-awt-headlessexception-in-spring-boot-java
 		System.setProperty("java.awt.headless", "false");
 
-		SquareMap squareMap = new SquareMap(20);
-
-		GameContext gameContext = new GameContext(squareMap,
+		GameContext<A> gameContext = new GameContext(getAnimal(),
+				squareMap,
+				getRenderer(),
 				() -> playerToOccupation.computeIfAbsent(playerName, player -> initialOccupation(squareMap)));
 		new ShowSwing().main(eventBus, new AtomicReference<>(gameContext));
 		return "Greetings from Spring Boot!";
@@ -99,12 +90,10 @@ public class HelloController {
 
 	@GetMapping("/turn")
 	public void nextTurn(@RequestParam(name = "playerName", defaultValue = "anonymous") String playerName) {
-		GameOfLife gameOfLife = new GameOfLife();
-		updateAndGetNextTurn(gameOfLife, playerName);
+		updateAndGetNextTurn(getGame(), playerName);
 	}
 
-	private <A extends IAnimal> IPlayerOccupation<A> updateAndGetNextTurn(IExpansionCycleRule<A> gameOfLife,
-			String playerName) {
+	protected IPlayerOccupation<A> updateAndGetNextTurn(IExpansionCycleRule<A> gameOfLife, String playerName) {
 		SquareMap squareMap = new SquareMap(20);
 
 		// int id = playerToId.computeIfAbsent(playerName, p -> playerToId.size());
@@ -122,9 +111,8 @@ public class HelloController {
 
 	@GetMapping("/ascii")
 	public String ascii(@RequestParam(name = "playerName", defaultValue = "anonymous") String playerName) {
-		SquareMap squareMap = new SquareMap(20);
-		GameOfLife gameOfLife = new GameOfLife();
-		IPlayerOccupation<?> playerNewSituation = updateAndGetNextTurn(gameOfLife, playerName);
+		IExpansionCycleRule<A> game = getGame();
+		IPlayerOccupation<A> playerNewSituation = updateAndGetNextTurn(game, playerName);
 
 		String s = generateAscii(squareMap, playerNewSituation);
 		// System.out.println(s);
@@ -137,22 +125,14 @@ public class HelloController {
 		return beforePre + pre + afterPre;
 	}
 
-	private RectangleOccupation<LiveCell> initialOccupation(SquareMap squareMap) {
-		RectangleOccupation<LiveCell> empty = RectangleOccupation.empty(squareMap);
+	protected abstract IPlayerOccupation<A> initialOccupation(SquareMap squareMap);
 
-		empty.setValue(new TwoDimensionPosition(5, 5), LiveCell.LIVE);
-		empty.setValue(new TwoDimensionPosition(5, 6), LiveCell.LIVE);
-		empty.setValue(new TwoDimensionPosition(5, 7), LiveCell.LIVE);
-
-		return empty;
-	}
-
-	private <A extends IAnimal> String generateAscii(SquareMap squareMap, IPlayerOccupation<A> playerNewSituation) {
+	private String generateAscii(SquareMap squareMap, IPlayerOccupation<A> playerNewSituation) {
 		List<IPlotPoint> points = new ArrayList<>();
 
 		// Print each alive cell individually
 		IMapWindow<A> windowBuffer = playerNewSituation.makeWindowBuffer(1);
-		playerNewSituation.forEachLiveCell(windowBuffer, cellPosition -> {
+		playerNewSituation.forEachLiveCell(getAnimal(), windowBuffer, cellPosition -> {
 
 			if (cellPosition instanceof TwoDimensionPosition twoDimPosition) {
 				IPlotPoint plotPoint = new PlotPoint(twoDimPosition.getX(), twoDimPosition.getY());

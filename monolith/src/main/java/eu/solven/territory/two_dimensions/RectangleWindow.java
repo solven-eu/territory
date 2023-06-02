@@ -1,4 +1,4 @@
-package eu.solven.territory;
+package eu.solven.territory.two_dimensions;
 
 import java.util.Arrays;
 import java.util.List;
@@ -6,6 +6,9 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import eu.solven.territory.IAnimal;
+import eu.solven.territory.ICellPosition;
+import eu.solven.territory.IMapWindow;
 import eu.solven.territory.game_of_life.GameOfLife;
 import eu.solven.territory.game_of_life.LiveCell;
 
@@ -51,6 +54,13 @@ public class RectangleWindow<A extends IAnimal> implements IMapWindow<A>, IIsRec
 		return 1 + 2 * (half - 1);
 	}
 
+	public static int fullToHalf(int full) {
+		if (full == 0) {
+			return 0;
+		}
+		return (full - 1) / 2;
+	}
+
 	@Override
 	public int getWidth() {
 		return width;
@@ -83,8 +93,8 @@ public class RectangleWindow<A extends IAnimal> implements IMapWindow<A>, IIsRec
 	}
 
 	public void forEachCoordinate(IntIntConsumer consumer) {
-		int halfWidth = (getWidth() - 1) / 2;
-		int halfHeight = (getHeight() - 1) / 2;
+		int halfWidth = fullToHalf(getWidth());
+		int halfHeight = fullToHalf(getHeight());
 
 		for (int x = -halfWidth; x <= halfWidth; x++) {
 			for (int y = -halfHeight; y <= halfHeight; y++) {
@@ -107,8 +117,14 @@ public class RectangleWindow<A extends IAnimal> implements IMapWindow<A>, IIsRec
 	 */
 	// @Override
 	public void setValue(int centeredX, int centeredY, A value) {
-		int halfWidth = (getWidth() - 1) / 2;
-		int halfHeight = (getHeight() - 1) / 2;
+		int halfWidth = fullToHalf(getWidth());
+		int halfHeight = fullToHalf(getHeight());
+
+		if (Math.abs(centeredX) > halfWidth) {
+			throw new IllegalArgumentException("Too large");
+		} else if (Math.abs(centeredY) > halfHeight) {
+			throw new IllegalArgumentException("Too large");
+		}
 
 		int shiftedX = halfWidth + centeredX;
 		int shiftedY = halfHeight + centeredY;
@@ -116,8 +132,15 @@ public class RectangleWindow<A extends IAnimal> implements IMapWindow<A>, IIsRec
 	}
 
 	@Override
-	public void setOffWorld() {
-		setValue(width, height, null);
+	public void setOffWorld(int shiftX, int shiftY) {
+		setValue(shiftX, shiftY, null);
+	}
+
+	/**
+	 * Set all cells to dead. Useful before filling only relevant cells
+	 */
+	public void reset() {
+		forEachCoordinate((x, y) -> setValue(x, y, null));
 	}
 
 }

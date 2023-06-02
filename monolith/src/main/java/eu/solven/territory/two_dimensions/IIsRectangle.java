@@ -1,4 +1,4 @@
-package eu.solven.territory;
+package eu.solven.territory.two_dimensions;
 
 public interface IIsRectangle {
 	int getWidth();

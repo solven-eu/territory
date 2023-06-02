@@ -13,4 +13,6 @@ public interface ITerritoryMap {
 	 *         between [0,maxY).
 	 */
 	boolean isRectangleLike();
+
+	boolean isOutOfWorld(ICellPosition cellPosition);
 }

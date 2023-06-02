@@ -27,6 +27,6 @@ public interface IMapWindow<A extends IAnimal> {
 
 	void forEachCell(Consumer<ICellPosition> object);
 
-	void setOffWorld();
+	void setOffWorld(int shiftX, int shiftY);
 
 }

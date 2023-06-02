@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.eventbus.EventBus;
 
 import eu.solven.territory.GameContext;
-import eu.solven.territory.SquareMap;
+import eu.solven.territory.two_dimensions.SquareMap;
 
 public class ShowSwing {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ShowSwing.class);

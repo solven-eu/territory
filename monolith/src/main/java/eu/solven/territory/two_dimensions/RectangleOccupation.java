@@ -1,4 +1,4 @@
-package eu.solven.territory;
+package eu.solven.territory.two_dimensions;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -6,13 +6,18 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Sets;
 
-import eu.solven.territory.game_of_life.GameOfLife;
+import eu.solven.territory.IAnimal;
+import eu.solven.territory.ICellMarker;
+import eu.solven.territory.ICellPosition;
+import eu.solven.territory.IMapWindow;
+import eu.solven.territory.IPlayerOccupation;
 import eu.solven.territory.game_of_life.LiveCell;
 
 /**
@@ -57,14 +62,16 @@ public class RectangleOccupation<A extends IAnimal> implements IPlayerOccupation
 	}
 
 	@Override
-	public void forEachLiveCell(IMapWindow<A> windowBuffer, Consumer<ICellPosition> cellPositionConsumer) {
+	public void forEachLiveCell(Class<? extends ICellMarker> marker,
+			IMapWindow<A> windowBuffer,
+			Consumer<ICellPosition> cellPositionConsumer) {
 		if (windowBuffer instanceof RectangleWindow<A> rectangleWindow) {
 			for (int x = 0; x < map.getWidth(); x++) {
 				for (int y = 0; y < map.getHeight(); y++) {
 					int oneDimensionalIndex = x + map.getWidth() * y;
-					// May be null, if outOfWorld
+					// May be null, if outOfWorld or dead
 					A currentCell = raw.get(oneDimensionalIndex);
-					if (LiveCell.LIVE.equals(currentCell)) {
+					if (currentCell != null && marker.isAssignableFrom(currentCell.getClass())) {
 						TwoDimensionPosition position = new TwoDimensionPosition(x, y);
 						fill(position, rectangleWindow);
 						cellPositionConsumer.accept(position);
@@ -78,7 +85,8 @@ public class RectangleOccupation<A extends IAnimal> implements IPlayerOccupation
 	}
 
 	@Override
-	public void forEachDeadButNearLiveCell(int radius,
+	public void forEachDeadButNearLiveCell(Class<? extends ICellMarker> marker,
+			int radius,
 			IMapWindow<A> windowBuffer,
 			Consumer<ICellPosition> cellPositionConsumer) {
 		// assert windowBuffer.getRadius() >= radius
@@ -89,7 +97,7 @@ public class RectangleOccupation<A extends IAnimal> implements IPlayerOccupation
 		// We assume there is much less live than dead cells
 		// Then, to find dead-near-live cells, we iterate around live cells to later iterate over this neighborhood,
 		// excluding the live cells
-		forEachLiveCell(windowBuffer, cellPosition -> {
+		forEachLiveCell(marker, windowBuffer, cellPosition -> {
 			live.add(cellPosition);
 
 			windowBuffer.forEachCell(c -> nearLive.add(c.shift(cellPosition)));
@@ -114,7 +122,7 @@ public class RectangleOccupation<A extends IAnimal> implements IPlayerOccupation
 			int shiftedY = y + shiftY;
 
 			if (shiftedX < 0 || shiftedX >= map.getWidth() || shiftedY < 0 || shiftedY >= map.getHeight()) {
-				windowBuffer.setOffWorld();
+				windowBuffer.setOffWorld(shiftX, shiftY);
 			} else {
 				windowBuffer.setValue(shiftX, shiftY, raw.get(shiftedX + map.getWidth() * shiftedY));
 			}
@@ -135,6 +143,11 @@ public class RectangleOccupation<A extends IAnimal> implements IPlayerOccupation
 		} else {
 			throw new IllegalArgumentException("!rectangle");
 		}
+	}
+
+	@Override
+	public void setDead(ICellPosition position) {
+		setValue(position, null);
 	}
 
 }

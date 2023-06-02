@@ -11,21 +11,25 @@ import javax.swing.JComponent;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 
+import eu.solven.territory.DeadCell;
 import eu.solven.territory.GameContext;
+import eu.solven.territory.IAnimal;
+import eu.solven.territory.IGameRenderer;
 import eu.solven.territory.IMapWindow;
 import eu.solven.territory.IPlayerOccupation;
-import eu.solven.territory.RectangleOccupation;
-import eu.solven.territory.SquareMap;
-import eu.solven.territory.TwoDimensionPosition;
+import eu.solven.territory.ITerritoryMap;
+import eu.solven.territory.two_dimensions.RectangleOccupation;
+import eu.solven.territory.two_dimensions.SquareMap;
+import eu.solven.territory.two_dimensions.TwoDimensionPosition;
 
-public class HeavyClientRenderer extends JComponent {
+public class HeavyClientRenderer<A extends IAnimal> extends JComponent {
 	private static final long serialVersionUID = -7682292545241939093L;
 
 	final EventBus eventBus;
 
-	final AtomicReference<GameContext> refGameContext;
+	final AtomicReference<GameContext<A>> refGameContext;
 
-	public HeavyClientRenderer(EventBus eventBus, AtomicReference<GameContext> refGameContext) {
+	public HeavyClientRenderer(EventBus eventBus, AtomicReference<GameContext<A>> refGameContext) {
 		this.eventBus = eventBus;
 		this.refGameContext = refGameContext;
 
@@ -38,50 +42,56 @@ public class HeavyClientRenderer extends JComponent {
 		this.repaint();
 	}
 
-	// @Override
-	// public Dimension getPreferredSize() {
-	// return size;
-	// }
-
 	@Override
 	public void paintComponent(Graphics g) {
-		GameContext gameContext = refGameContext.get();
-		IPlayerOccupation occupation = gameContext.getOccupation();
+		GameContext<A> gameContext = refGameContext.get();
+		IPlayerOccupation<A> occupation = gameContext.getOccupation();
 
-		if (occupation instanceof RectangleOccupation rectangle) {
+		// if (occupation instanceof RectangleOccupation<A> rectangle) {
+		IGameRenderer renderer = refGameContext.get().getRenderer();
 
-			BufferedImage image = new BufferedImage(((SquareMap) gameContext.getMap()).getWidth(),
-					((SquareMap) gameContext.getMap()).getHeight(),
-					BufferedImage.TYPE_INT_RGB);
+		BufferedImage image = new BufferedImage(((SquareMap) gameContext.getMap()).getWidth(),
+				((SquareMap) gameContext.getMap()).getHeight(),
+				BufferedImage.TYPE_INT_RGB);
 
-			IMapWindow windowBuffer = occupation.makeWindowBuffer(1);
-			rectangle.forEachLiveCell(windowBuffer, cellPosition -> {
-
-				if (cellPosition instanceof TwoDimensionPosition rectangleCell) {
-					// g2.setColor(Color.red);
-					// g2.fillRect(rectangleCell.getX(), rectangleCell.getY(), 5, 5);
-					image.setRGB(rectangleCell.getX(), rectangleCell.getY(), Color.red.getRGB());
-				}
-			});
-
-			IMapWindow windowBuffer2 = occupation.makeWindowBuffer(2);
-			rectangle.forEachDeadButNearLiveCell(1, windowBuffer2, cellPosition -> {
+		{
+			IMapWindow<A> windowBuffer = occupation.makeWindowBuffer(1);
+			occupation.forEachLiveCell(gameContext.getAnimal(), windowBuffer, cellPosition -> {
 
 				if (cellPosition instanceof TwoDimensionPosition rectangleCell) {
-					// g2.setColor(Color.green);
-					// g2.fillRect(rectangleCell.getX(), rectangleCell.getY(), 5, 5);
-					image.setRGB(rectangleCell.getX(), rectangleCell.getY(), Color.green.getRGB());
+					Color color = renderer.getCellColor(windowBuffer.getCenter());
+					image.setRGB(rectangleCell.getX(), rectangleCell.getY(), color.getRGB());
 				}
 			});
-
-			Image scaled = image.getScaledInstance((int) g.getClip().getBounds().getWidth(),
-					(int) g.getClip().getBounds().getHeight(),
-					Image.SCALE_SMOOTH);
-
-			g.drawImage(scaled, 0, 0, this);
 		}
 
-		// Graphics g2 = g.create();
+		{
+			// Radius is 2 as we need to see further than the live cells
+			IMapWindow<A> windowBuffer2 = occupation.makeWindowBuffer(2);
+			occupation.forEachDeadButNearLiveCell(gameContext.getAnimal(), 1, windowBuffer2, cellPosition -> {
+				assert null == windowBuffer2.getCenter();
 
+				if (cellPosition instanceof TwoDimensionPosition rectangleCell) {
+					if (isOutOfWorld(gameContext.getMap(), rectangleCell)) {
+						// Out of the world
+					} else {
+						Color color = renderer.getCellColor(new DeadCell());
+						image.setRGB(rectangleCell.getX(), rectangleCell.getY(), color.getRGB());
+					}
+
+				}
+			});
+		}
+
+		Image scaled = image.getScaledInstance((int) g.getClip().getBounds().getWidth(),
+				(int) g.getClip().getBounds().getHeight(),
+				Image.SCALE_SMOOTH);
+
+		g.drawImage(scaled, 0, 0, this);
+		// }
+	}
+
+	private boolean isOutOfWorld(ITerritoryMap iTerritoryMap, TwoDimensionPosition cellPosition) {
+		return iTerritoryMap.isOutOfWorld(cellPosition);
 	}
 }
