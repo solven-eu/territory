@@ -14,20 +14,20 @@ import com.google.common.eventbus.EventBus;
 import eu.solven.territory.IExpansionCycleRule;
 import eu.solven.territory.IGameRenderer;
 import eu.solven.territory.mvc.AGameController;
-import eu.solven.territory.snake.GameOfSnake;
 import eu.solven.territory.snake.GameOfSnakeRenderer;
-import eu.solven.territory.snake.SnakeCell;
+import eu.solven.territory.snake.ISnakeWorldItem;
 import eu.solven.territory.snake.SnakeInRectangleOccupation;
+import eu.solven.territory.snake.v0_only_snake.GameOfSnake;
 import eu.solven.territory.two_dimensions.SquareMap;
 import eu.solven.territory.two_dimensions.TwoDimensionPosition;
 
 @RestController
 @RequestMapping("/snake")
-public class SnakeController extends AGameController<SnakeCell> {
+public class SnakeController extends AGameController<ISnakeWorldItem> {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SnakeController.class);
 
 	final SquareMap squareMap = new SquareMap(20);
-	final IExpansionCycleRule<SnakeCell> game = new GameOfSnake(squareMap);
+	final IExpansionCycleRule<ISnakeWorldItem> game = new GameOfSnake(squareMap);
 
 	public SnakeController(EventBus eventBus) {
 		super(eventBus);
@@ -45,12 +45,12 @@ public class SnakeController extends AGameController<SnakeCell> {
 	}
 
 	@Override
-	protected Class<SnakeCell> getAnimal() {
-		return SnakeCell.class;
+	protected Class<ISnakeWorldItem> getAnimal() {
+		return ISnakeWorldItem.class;
 	}
 
 	@Override
-	protected IExpansionCycleRule<SnakeCell> getGame() {
+	protected IExpansionCycleRule<ISnakeWorldItem> getGame() {
 		return game;
 	}
 

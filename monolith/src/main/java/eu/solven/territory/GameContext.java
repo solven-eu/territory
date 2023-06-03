@@ -5,14 +5,14 @@ import java.util.function.Supplier;
 import lombok.Data;
 
 @Data
-public class GameContext<A extends IAnimal> {
+public class GameContext<A extends IWorldCell> {
 	private final Class<A> animal;
 	private final ITerritoryMap map;
 	private final IGameRenderer renderer;
 
-	private final Supplier<IPlayerOccupation<A>> supplierOccupation;
+	private final Supplier<IWorldOccupation<A>> supplierOccupation;
 
-	public IPlayerOccupation<A> getOccupation() {
+	public IWorldOccupation<A> getOccupation() {
 		return supplierOccupation.get();
 	}
 

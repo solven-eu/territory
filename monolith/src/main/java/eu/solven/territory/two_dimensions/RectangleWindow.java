@@ -6,7 +6,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import eu.solven.territory.IAnimal;
+import eu.solven.territory.IWorldCell;
 import eu.solven.territory.ICellPosition;
 import eu.solven.territory.IMapWindow;
 import eu.solven.territory.game_of_life.GameOfLife;
@@ -19,7 +19,7 @@ import eu.solven.territory.game_of_life.LiveCell;
  * @author Benoit Lacelle
  *
  */
-public class RectangleWindow<A extends IAnimal> implements IMapWindow<A>, IIsRectangle {
+public class RectangleWindow<A extends IWorldCell> implements IMapWindow<A>, IIsRectangle {
 	final List<A> window;
 
 	final int width;
@@ -84,7 +84,7 @@ public class RectangleWindow<A extends IAnimal> implements IMapWindow<A>, IIsRec
 		return window.stream().filter(i -> predicate.test(i)).count();
 	}
 
-	public static <A extends IAnimal> IMapWindow<A> empty(int halfWidth, int halfHeight) {
+	public static <A extends IWorldCell> IMapWindow<A> empty(int halfWidth, int halfHeight) {
 		int width = halfToFull(halfWidth);
 		int height = halfToFull(halfHeight);
 		Object[] raw = new Object[width * height];

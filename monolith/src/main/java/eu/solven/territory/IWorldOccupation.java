@@ -8,17 +8,17 @@ import java.util.function.Consumer;
  * @author Benoit Lacelle
  *
  */
-public interface IPlayerOccupation<A extends IAnimal> {
+public interface IWorldOccupation<W extends IWorldCell> {
 
-	IPlayerOccupation<A> mutableCopy();
+	IWorldOccupation<W> mutableCopy();
 
 	void forEachLiveCell(Class<? extends ICellMarker> marker,
-			IMapWindow<A> windowBuffer,
+			IMapWindow<W> windowBuffer,
 			Consumer<ICellPosition> cellPositionConsumer);
 
 	void forEachDeadButNearLiveCell(Class<? extends ICellMarker> marker,
 			int gameOfLifeRadius,
-			IMapWindow<A> windowBuffer,
+			IMapWindow<W> windowBuffer,
 			Consumer<ICellPosition> cellPositionConsumer);
 
 	/**
@@ -26,9 +26,9 @@ public interface IPlayerOccupation<A extends IAnimal> {
 	 * @param radius
 	 * @return the size of the window. 0 mean the window is empty. 1 means only current cell is visible.
 	 */
-	IMapWindow<A> makeWindowBuffer(int radius);
+	IMapWindow<W> makeWindowBuffer(int radius);
 
-	void setValue(ICellPosition position, A cellValue);
+	void setValue(ICellPosition position, W cellValue);
 
 	void setDead(ICellPosition position);
 }

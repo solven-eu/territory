@@ -2,7 +2,7 @@ package eu.solven.territory.game_of_life;
 
 import eu.solven.territory.IExpansionCycleRule;
 import eu.solven.territory.IMapWindow;
-import eu.solven.territory.IPlayerOccupation;
+import eu.solven.territory.IWorldOccupation;
 
 /**
  * The standard Conway Game-of-Life rule.
@@ -18,8 +18,8 @@ public class GameOfLife implements IExpansionCycleRule<LiveCell> {
 	public static final int LIVE = 1;
 
 	@Override
-	public IPlayerOccupation<LiveCell> cycle(IPlayerOccupation<LiveCell> occupation) {
-		IPlayerOccupation<LiveCell> copy = occupation.mutableCopy();
+	public IWorldOccupation<LiveCell> cycle(IWorldOccupation<LiveCell> occupation) {
+		IWorldOccupation<LiveCell> copy = occupation.mutableCopy();
 
 		int includeSelfRadius = 1;
 		int gameOfLifeRadius = 1;

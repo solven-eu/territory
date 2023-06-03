@@ -5,31 +5,27 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.collect.Sets;
 
 import eu.solven.territory.ICellMarker;
 import eu.solven.territory.ICellPosition;
 import eu.solven.territory.IMapWindow;
-import eu.solven.territory.IPlayerOccupation;
+import eu.solven.territory.IWorldOccupation;
+import eu.solven.territory.snake.v0_only_snake.GameOfSnake;
 import eu.solven.territory.two_dimensions.IIsRectangle;
 import eu.solven.territory.two_dimensions.RectangleWindow;
 import eu.solven.territory.two_dimensions.SquareMap;
 import eu.solven.territory.two_dimensions.TwoDimensionPosition;
 
 /**
- * A basic Rectangle {@link IPlayerOccupation}.
+ * A basic Rectangle {@link IWorldOccupation}.
  * 
  * `0` means empty.
  * 
  * @author Benoit Lacelle
  *
  */
-public class SnakeInRectangleOccupation implements IPlayerOccupation<SnakeCell> {
-	private static final Logger LOGGER = LoggerFactory.getLogger(SnakeInRectangleOccupation.class);
-
+public class SnakeInRectangleOccupation implements IWorldOccupation<ISnakeWorldItem> {
 	final IIsRectangle map;
 	final WholeSnake snake;
 
@@ -44,7 +40,8 @@ public class SnakeInRectangleOccupation implements IPlayerOccupation<SnakeCell> 
 		this.refHeadPosition = new AtomicReference<TwoDimensionPosition>(headPosition);
 	}
 
-	public static SnakeInRectangleOccupation baby(SquareMap map, TwoDimensionPosition headPosition) {
+	public static <S extends ISnakeWorldItem> SnakeInRectangleOccupation baby(SquareMap map,
+			TwoDimensionPosition headPosition) {
 		if (!map.isRectangleLike()) {
 			throw new IllegalArgumentException("!rectangle");
 		}
@@ -53,23 +50,23 @@ public class SnakeInRectangleOccupation implements IPlayerOccupation<SnakeCell> 
 	}
 
 	@Override
-	public IPlayerOccupation<SnakeCell> mutableCopy() {
+	public IWorldOccupation<ISnakeWorldItem> mutableCopy() {
 		return new SnakeInRectangleOccupation(map, snake.copy(), refHeadPosition.get());
 	}
 
 	@Override
-	public IMapWindow<SnakeCell> makeWindowBuffer(int radius) {
+	public IMapWindow<ISnakeWorldItem> makeWindowBuffer(int radius) {
 		return RectangleWindow.empty(radius, radius);
 	}
 
 	@Override
 	public void forEachLiveCell(Class<? extends ICellMarker> marker,
-			IMapWindow<SnakeCell> windowBuffer,
+			IMapWindow<ISnakeWorldItem> windowBuffer,
 			Consumer<ICellPosition> cellPositionConsumer) {
-		if (windowBuffer instanceof RectangleWindow<SnakeCell> rectangleWindow) {
+		if (windowBuffer instanceof RectangleWindow<ISnakeWorldItem> rectangleWindow) {
 			TwoDimensionPosition cellPosition = refHeadPosition.get();
 
-			for (SnakeCell currentCell : snake.cells) {
+			for (ISnakeCell currentCell : snake.cells) {
 				if (marker.isAssignableFrom(currentCell.getClass())) {
 					fill(cellPosition, rectangleWindow);
 					cellPositionConsumer.accept(cellPosition);
@@ -85,7 +82,7 @@ public class SnakeInRectangleOccupation implements IPlayerOccupation<SnakeCell> 
 	@Override
 	public void forEachDeadButNearLiveCell(Class<? extends ICellMarker> marker,
 			int radius,
-			IMapWindow<SnakeCell> windowBuffer,
+			IMapWindow<ISnakeWorldItem> windowBuffer,
 			Consumer<ICellPosition> cellPositionConsumer) {
 		Set<ICellPosition> live = new HashSet<>();
 		Set<ICellPosition> nearLive = new HashSet<>();
@@ -99,7 +96,7 @@ public class SnakeInRectangleOccupation implements IPlayerOccupation<SnakeCell> 
 			windowBuffer.forEachCell(c -> nearLive.add(c.shift(cellPosition)));
 		});
 
-		if (windowBuffer instanceof RectangleWindow<SnakeCell> rectangleWindow) {
+		if (windowBuffer instanceof RectangleWindow<ISnakeWorldItem> rectangleWindow) {
 			Sets.difference(nearLive, live).stream().map(TwoDimensionPosition.class::cast).forEach(deadButNearLive -> {
 				fill(deadButNearLive, rectangleWindow);
 				cellPositionConsumer.accept(deadButNearLive);
@@ -109,7 +106,7 @@ public class SnakeInRectangleOccupation implements IPlayerOccupation<SnakeCell> 
 		}
 	}
 
-	private void fill(TwoDimensionPosition position, RectangleWindow<SnakeCell> windowBuffer) {
+	private void fill(TwoDimensionPosition position, RectangleWindow<ISnakeWorldItem> windowBuffer) {
 		windowBuffer.reset();
 
 		int x = position.getX();
@@ -126,7 +123,7 @@ public class SnakeInRectangleOccupation implements IPlayerOccupation<SnakeCell> 
 
 		TwoDimensionPosition cellPosition = refHeadPosition.get();
 
-		for (SnakeCell currentCell : snake.cells) {
+		for (ISnakeCell currentCell : snake.getCells()) {
 			TwoDimensionPosition relativePosition = position.back(cellPosition);
 
 			int shiftX = relativePosition.getX();
@@ -162,7 +159,7 @@ public class SnakeInRectangleOccupation implements IPlayerOccupation<SnakeCell> 
 	}
 
 	@Override
-	public void setValue(ICellPosition position, SnakeCell cellValue) {
+	public void setValue(ICellPosition position, ISnakeWorldItem cellValue) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -175,11 +172,15 @@ public class SnakeInRectangleOccupation implements IPlayerOccupation<SnakeCell> 
 		refHeadPosition.set(newHeadPosition);
 	}
 
-	public void newHead(SnakeCell head, int direction) {
+	public void newHead(ISnakeCell head, int direction) {
 		snake.getHead().newHead(direction);
 
 		if (snake.cells.stream().filter(c -> c.isHead()).count() != 1) {
 			throw new IllegalArgumentException("We have multiple heads");
 		}
+	}
+
+	public void eatApple() {
+		snake.capacity++;
 	}
 }

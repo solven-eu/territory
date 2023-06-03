@@ -1,11 +1,11 @@
 package eu.solven.territory;
 
-public interface IExpansionCycleRule<A extends IAnimal> {
+public interface IExpansionCycleRule<A extends IWorldCell> {
 	/**
 	 * 
 	 * @param occupation
-	 *            previous turn {@link IPlayerOccupation}
-	 * @return next turn {@link IPlayerOccupation}
+	 *            previous turn {@link IWorldOccupation}
+	 * @return next turn {@link IWorldOccupation}
 	 */
-	IPlayerOccupation<A> cycle(IPlayerOccupation<A> occupation);
+	IWorldOccupation<A> cycle(IWorldOccupation<A> occupation);
 }

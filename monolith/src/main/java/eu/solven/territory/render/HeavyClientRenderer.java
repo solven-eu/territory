@@ -13,16 +13,16 @@ import com.google.common.eventbus.Subscribe;
 
 import eu.solven.territory.DeadCell;
 import eu.solven.territory.GameContext;
-import eu.solven.territory.IAnimal;
+import eu.solven.territory.IWorldCell;
 import eu.solven.territory.IGameRenderer;
 import eu.solven.territory.IMapWindow;
-import eu.solven.territory.IPlayerOccupation;
+import eu.solven.territory.IWorldOccupation;
 import eu.solven.territory.ITerritoryMap;
 import eu.solven.territory.two_dimensions.RectangleOccupation;
 import eu.solven.territory.two_dimensions.SquareMap;
 import eu.solven.territory.two_dimensions.TwoDimensionPosition;
 
-public class HeavyClientRenderer<A extends IAnimal> extends JComponent {
+public class HeavyClientRenderer<A extends IWorldCell> extends JComponent {
 	private static final long serialVersionUID = -7682292545241939093L;
 
 	final EventBus eventBus;
@@ -45,7 +45,7 @@ public class HeavyClientRenderer<A extends IAnimal> extends JComponent {
 	@Override
 	public void paintComponent(Graphics g) {
 		GameContext<A> gameContext = refGameContext.get();
-		IPlayerOccupation<A> occupation = gameContext.getOccupation();
+		IWorldOccupation<A> occupation = gameContext.getOccupation();
 
 		// if (occupation instanceof RectangleOccupation<A> rectangle) {
 		IGameRenderer renderer = refGameContext.get().getRenderer();

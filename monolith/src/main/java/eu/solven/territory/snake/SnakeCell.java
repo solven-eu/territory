@@ -2,13 +2,13 @@ package eu.solven.territory.snake;
 
 import java.util.LinkedList;
 
-import eu.solven.territory.snake.ISnakeMarkers.Snake;
+import eu.solven.territory.snake.ISnakeMarkers.IsSnake;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class SnakeCell extends SnakeOrApple implements Snake {
+public class SnakeCell extends SnakeOrApple implements ISnakeCell, IsSnake {
 
 	// public static final SnakeCell BORDER = new SnakeCell(-1, 0);
 
@@ -34,8 +34,8 @@ public class SnakeCell extends SnakeOrApple implements Snake {
 		return head;
 	}
 
-	public SnakeCell newHead(int direction) {
-		SnakeCell previousHead = whole.loseHead();
+	public void newHead(int direction) {
+		ISnakeCell previousHead = whole.loseHead();
 
 		int previousHeadCellIndex = previousHead.getCellIndex();
 		SnakeCell behindNewHead = new SnakeCell(whole, false, previousHeadCellIndex, previousHead.getDirection());
@@ -43,10 +43,10 @@ public class SnakeCell extends SnakeOrApple implements Snake {
 
 		SnakeCell futureHead = new SnakeCell(whole, true, previousHeadCellIndex + 1, direction);
 		whole.appendAsHead(futureHead);
-		return futureHead;
+		// return futureHead;
 	}
 
-	public SnakeCell copySnake(WholeSnake newSnake) {
+	public SnakeCell editSnake(WholeSnake newSnake) {
 		return new SnakeCell(newSnake, isHead, cellIndex, direction);
 	}
 }

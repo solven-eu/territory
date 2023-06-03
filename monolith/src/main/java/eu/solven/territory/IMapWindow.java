@@ -10,7 +10,7 @@ import java.util.function.Predicate;
  * @author Benoit Lacelle
  *
  */
-public interface IMapWindow<A extends IAnimal> {
+public interface IMapWindow<A extends IWorldCell> {
 
 	/**
 	 * 

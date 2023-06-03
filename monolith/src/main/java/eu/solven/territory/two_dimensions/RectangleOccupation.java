@@ -13,22 +13,22 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Sets;
 
-import eu.solven.territory.IAnimal;
+import eu.solven.territory.IWorldCell;
 import eu.solven.territory.ICellMarker;
 import eu.solven.territory.ICellPosition;
 import eu.solven.territory.IMapWindow;
-import eu.solven.territory.IPlayerOccupation;
+import eu.solven.territory.IWorldOccupation;
 import eu.solven.territory.game_of_life.LiveCell;
 
 /**
- * A basic Rectangle {@link IPlayerOccupation}.
+ * A basic Rectangle {@link IWorldOccupation}.
  * 
  * `0` means empty.
  * 
  * @author Benoit Lacelle
  *
  */
-public class RectangleOccupation<A extends IAnimal> implements IPlayerOccupation<A> {
+public class RectangleOccupation<A extends IWorldCell> implements IWorldOccupation<A> {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RectangleOccupation.class);
 
 	final IIsRectangle map;
@@ -40,7 +40,7 @@ public class RectangleOccupation<A extends IAnimal> implements IPlayerOccupation
 		this.raw = raw;
 	}
 
-	public static <A extends IAnimal> RectangleOccupation<A> empty(SquareMap map) {
+	public static <A extends IWorldCell> RectangleOccupation<A> empty(SquareMap map) {
 		if (!map.isRectangleLike()) {
 			throw new IllegalArgumentException("!rectangle");
 		}
@@ -52,7 +52,7 @@ public class RectangleOccupation<A extends IAnimal> implements IPlayerOccupation
 	}
 
 	@Override
-	public IPlayerOccupation<A> mutableCopy() {
+	public IWorldOccupation<A> mutableCopy() {
 		return new RectangleOccupation<>(map, new ArrayList<>(raw));
 	}
 

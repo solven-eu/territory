@@ -29,23 +29,23 @@ import com.indvd00m.ascii.render.elements.plot.api.IPlotPoint;
 import com.indvd00m.ascii.render.elements.plot.misc.PlotPoint;
 
 import eu.solven.territory.GameContext;
-import eu.solven.territory.IAnimal;
+import eu.solven.territory.IWorldCell;
 import eu.solven.territory.IExpansionCycleRule;
 import eu.solven.territory.IGameRenderer;
 import eu.solven.territory.IMapWindow;
-import eu.solven.territory.IPlayerOccupation;
+import eu.solven.territory.IWorldOccupation;
 import eu.solven.territory.render.ShowSwing;
 import eu.solven.territory.two_dimensions.SquareMap;
 import eu.solven.territory.two_dimensions.TwoDimensionPosition;
 
 @RestController
-public abstract class AGameController<A extends IAnimal> {
+public abstract class AGameController<A extends IWorldCell> {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AGameController.class);
 
 	final SquareMap squareMap = new SquareMap(20);
 
 	protected Map<String, Integer> playerToId = new ConcurrentHashMap<>();
-	protected Map<String, IPlayerOccupation<A>> playerToOccupation = new ConcurrentHashMap<>();
+	protected Map<String, IWorldOccupation<A>> playerToOccupation = new ConcurrentHashMap<>();
 
 	final String beforePre = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n"
 			+ "\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> \n"
@@ -93,15 +93,15 @@ public abstract class AGameController<A extends IAnimal> {
 		updateAndGetNextTurn(getGame(), playerName);
 	}
 
-	protected IPlayerOccupation<A> updateAndGetNextTurn(IExpansionCycleRule<A> gameOfLife, String playerName) {
+	protected IWorldOccupation<A> updateAndGetNextTurn(IExpansionCycleRule<A> gameOfLife, String playerName) {
 		SquareMap squareMap = new SquareMap(20);
 
 		// int id = playerToId.computeIfAbsent(playerName, p -> playerToId.size());
 
-		IPlayerOccupation<A> singlePlayerOccupation = (IPlayerOccupation<A>) playerToOccupation
+		IWorldOccupation<A> singlePlayerOccupation = (IWorldOccupation<A>) playerToOccupation
 				.computeIfAbsent(playerName, player -> initialOccupation(squareMap));
 
-		IPlayerOccupation<A> playerNewSituation = gameOfLife.cycle(singlePlayerOccupation);
+		IWorldOccupation<A> playerNewSituation = gameOfLife.cycle(singlePlayerOccupation);
 		playerToOccupation.put(playerName, playerNewSituation);
 
 		eventBus.post(playerNewSituation);
@@ -112,7 +112,7 @@ public abstract class AGameController<A extends IAnimal> {
 	@GetMapping("/ascii")
 	public String ascii(@RequestParam(name = "playerName", defaultValue = "anonymous") String playerName) {
 		IExpansionCycleRule<A> game = getGame();
-		IPlayerOccupation<A> playerNewSituation = updateAndGetNextTurn(game, playerName);
+		IWorldOccupation<A> playerNewSituation = updateAndGetNextTurn(game, playerName);
 
 		String s = generateAscii(squareMap, playerNewSituation);
 		// System.out.println(s);
@@ -125,9 +125,9 @@ public abstract class AGameController<A extends IAnimal> {
 		return beforePre + pre + afterPre;
 	}
 
-	protected abstract IPlayerOccupation<A> initialOccupation(SquareMap squareMap);
+	protected abstract IWorldOccupation<A> initialOccupation(SquareMap squareMap);
 
-	private String generateAscii(SquareMap squareMap, IPlayerOccupation<A> playerNewSituation) {
+	private String generateAscii(SquareMap squareMap, IWorldOccupation<A> playerNewSituation) {
 		List<IPlotPoint> points = new ArrayList<>();
 
 		// Print each alive cell individually
