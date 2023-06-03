@@ -2,6 +2,8 @@ package eu.solven.territory;
 
 import java.util.function.Consumer;
 
+import eu.solven.territory.two_dimensions.TwoDimensionPosition;
+
 /**
  * The occupation of a {@link ITerritoryMap} by a player. Due to {@link IFogOfWar}, these as per-player.
  * 

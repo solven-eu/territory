@@ -10,6 +10,7 @@ import eu.solven.territory.ICellPosition;
 import eu.solven.territory.IExpansionCycleRule;
 import eu.solven.territory.IMapWindow;
 import eu.solven.territory.IWorldOccupation;
+import eu.solven.territory.snake.Apple;
 import eu.solven.territory.snake.ISnakeCell;
 import eu.solven.territory.snake.ISnakeMarkers;
 import eu.solven.territory.snake.ISnakeWorldItem;
@@ -51,10 +52,25 @@ public class GameOfSnake implements IExpansionCycleRule<ISnakeWorldItem> {
 		SnakeTurnContext context = buildContext(occupation, windowBuffer);
 
 		if (rawCopy instanceof SnakeInRectangleOccupation snakeCopy) {
+			int nbApples = context.getOccupiedByApple().size();
+
+			int worldSize = map.size();
+
+			// 1 apple plus one apple per 10x10 blocks
+			int targetNbApples = 1 + worldSize / (10 * 10);
+
+			int missingApples = Math.max(0, targetNbApples - nbApples);
+
+			if (missingApples > 0) {
+				// Apples can pop anywhere, even under the snake
+				ICellPosition randomPosition = map.randomPosition();
+				snakeCopy.setValue(randomPosition, new Apple());
+			}
+
 			// Process the head
 			occupation.forEachLiveCell(ISnakeMarkers.IsSnake.class, windowBuffer, position -> {
 				SnakeCell currentHead = (SnakeCell) windowBuffer.getCenter();
-				assert currentHead.getCellIndex() == SNAKE;
+				// assert currentHead.getCellIndex() == SNAKE;
 
 				if (!currentHead.isHead()) {
 					return;
@@ -74,7 +90,7 @@ public class GameOfSnake implements IExpansionCycleRule<ISnakeWorldItem> {
 
 					if (canBeNextHead(context, optNextHead)) {
 						newHeadPosition = optNextHead;
-						newDirection = currentHead.getDirection();
+						newDirection = optDirection;
 
 						break;
 					}
@@ -85,8 +101,8 @@ public class GameOfSnake implements IExpansionCycleRule<ISnakeWorldItem> {
 					LOGGER.info("Snake can not move: it loses its tail");
 					currentHead.getWhole().loseTail();
 				} else {
-
 					if (context.isApple(newHeadPosition)) {
+						snakeCopy.appleConsumed(newHeadPosition);
 						snakeCopy.eatApple();
 					}
 

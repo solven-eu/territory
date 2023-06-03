@@ -1,5 +1,7 @@
 package eu.solven.territory.two_dimensions;
 
+import java.util.Random;
+
 import eu.solven.territory.ICellPosition;
 import eu.solven.territory.ITerritoryMap;
 
@@ -11,6 +13,7 @@ import eu.solven.territory.ITerritoryMap;
  */
 public class SquareMap implements ITerritoryMap, IIsRectangle {
 
+	final Random r = new Random(0);
 	final int width;
 
 	public SquareMap(int width) {
@@ -45,6 +48,14 @@ public class SquareMap implements ITerritoryMap, IIsRectangle {
 		} else {
 			return true;
 		}
+	}
+
+	public int size() {
+		return getWidth() * getHeight();
+	}
+
+	public ICellPosition randomPosition() {
+		return new TwoDimensionPosition(r.nextInt(getWidth()), r.nextInt(getHeight()));
 	}
 
 }

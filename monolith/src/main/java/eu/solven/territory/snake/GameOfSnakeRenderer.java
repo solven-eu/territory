@@ -4,6 +4,7 @@ import java.awt.Color;
 
 import eu.solven.territory.DeadCell;
 import eu.solven.territory.IWorldCell;
+import eu.solven.territory.snake.ISnakeMarkers.IsApple;
 import eu.solven.territory.IGameRenderer;
 
 public class GameOfSnakeRenderer implements IGameRenderer {
@@ -16,7 +17,9 @@ public class GameOfSnakeRenderer implements IGameRenderer {
 				return Color.green;
 			}
 		} else if (iAnimal instanceof DeadCell) {
-			return Color.red;
+			return Color.cyan;
+		} else if (iAnimal instanceof IsApple) {
+			return Color.yellow;
 		} else {
 			return Color.black;
 		}

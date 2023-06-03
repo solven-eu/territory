@@ -11,6 +11,7 @@ import eu.solven.territory.ICellMarker;
 import eu.solven.territory.ICellPosition;
 import eu.solven.territory.IMapWindow;
 import eu.solven.territory.IWorldOccupation;
+import eu.solven.territory.snake.ISnakeMarkers.IsApple;
 import eu.solven.territory.snake.v0_only_snake.GameOfSnake;
 import eu.solven.territory.two_dimensions.IIsRectangle;
 import eu.solven.territory.two_dimensions.RectangleWindow;
@@ -31,13 +32,24 @@ public class SnakeInRectangleOccupation implements IWorldOccupation<ISnakeWorldI
 
 	final AtomicReference<TwoDimensionPosition> refHeadPosition;
 
-	// private TwoDimensionPosition newHeadPosition;
+	final Set<TwoDimensionPosition> apples = new HashSet<>();
 
 	public SnakeInRectangleOccupation(IIsRectangle map, WholeSnake snake, TwoDimensionPosition headPosition) {
 		this.map = map;
 		this.snake = snake;
 
 		this.refHeadPosition = new AtomicReference<TwoDimensionPosition>(headPosition);
+	}
+
+	public SnakeInRectangleOccupation(IIsRectangle map,
+			WholeSnake snake,
+			TwoDimensionPosition headPosition,
+			Set<TwoDimensionPosition> apples) {
+		this.map = map;
+		this.snake = snake;
+
+		this.refHeadPosition = new AtomicReference<TwoDimensionPosition>(headPosition);
+		this.apples.addAll(apples);
 	}
 
 	public static <S extends ISnakeWorldItem> SnakeInRectangleOccupation baby(SquareMap map,
@@ -51,7 +63,7 @@ public class SnakeInRectangleOccupation implements IWorldOccupation<ISnakeWorldI
 
 	@Override
 	public IWorldOccupation<ISnakeWorldItem> mutableCopy() {
-		return new SnakeInRectangleOccupation(map, snake.copy(), refHeadPosition.get());
+		return new SnakeInRectangleOccupation(map, snake.copy(), refHeadPosition.get(), apples);
 	}
 
 	@Override
@@ -64,15 +76,24 @@ public class SnakeInRectangleOccupation implements IWorldOccupation<ISnakeWorldI
 			IMapWindow<ISnakeWorldItem> windowBuffer,
 			Consumer<ICellPosition> cellPositionConsumer) {
 		if (windowBuffer instanceof RectangleWindow<ISnakeWorldItem> rectangleWindow) {
-			TwoDimensionPosition cellPosition = refHeadPosition.get();
+			{
+				TwoDimensionPosition cellPosition = refHeadPosition.get();
 
-			for (ISnakeCell currentCell : snake.cells) {
-				if (marker.isAssignableFrom(currentCell.getClass())) {
-					fill(cellPosition, rectangleWindow);
+				for (ISnakeCell currentCell : snake.cells) {
+					if (marker.isAssignableFrom(currentCell.getClass())) {
+						fill(cellPosition, rectangleWindow);
+						cellPositionConsumer.accept(cellPosition);
+					}
+
+					cellPosition = GameOfSnake.nextHead(cellPosition, GameOfSnake.behind(currentCell));
+				}
+			}
+
+			for (ICellPosition cellPosition : apples) {
+				if (marker.isAssignableFrom(Apple.class)) {
+					fill((TwoDimensionPosition) cellPosition, rectangleWindow);
 					cellPositionConsumer.accept(cellPosition);
 				}
-
-				cellPosition = GameOfSnake.nextHead(cellPosition, GameOfSnake.behind(currentCell));
 			}
 		} else {
 			throw new IllegalArgumentException("!rectangle");
@@ -121,10 +142,10 @@ public class SnakeInRectangleOccupation implements IWorldOccupation<ISnakeWorldI
 			}
 		});
 
-		TwoDimensionPosition cellPosition = refHeadPosition.get();
+		TwoDimensionPosition headPosition = refHeadPosition.get();
 
 		for (ISnakeCell currentCell : snake.getCells()) {
-			TwoDimensionPosition relativePosition = position.back(cellPosition);
+			TwoDimensionPosition relativePosition = position.back(headPosition);
 
 			int shiftX = relativePosition.getX();
 			int shiftY = relativePosition.getY();
@@ -135,9 +156,21 @@ public class SnakeInRectangleOccupation implements IWorldOccupation<ISnakeWorldI
 				windowBuffer.setValue(shiftX, shiftY, currentCell);
 			}
 
-			cellPosition = GameOfSnake.nextHead(cellPosition, GameOfSnake.behind(currentCell));
+			headPosition = GameOfSnake.nextHead(headPosition, GameOfSnake.behind(currentCell));
 		}
 
+		apples.forEach(applePosition -> {
+			TwoDimensionPosition relativePosition = position.back(applePosition);
+
+			int shiftX = relativePosition.getX();
+			int shiftY = relativePosition.getY();
+
+			if (isOutOfWorldCentered(windowBuffer, shiftX, shiftY)) {
+				// This part of the snake is out of the window, but it may later come back into it
+			} else {
+				windowBuffer.setValue(shiftX, shiftY, new Apple());
+			}
+		});
 	}
 
 	public static boolean isOutOfWorld(IIsRectangle world, int x, int y) {
@@ -160,7 +193,11 @@ public class SnakeInRectangleOccupation implements IWorldOccupation<ISnakeWorldI
 
 	@Override
 	public void setValue(ICellPosition position, ISnakeWorldItem cellValue) {
-		throw new UnsupportedOperationException();
+		if (cellValue instanceof IsApple) {
+			apples.add((TwoDimensionPosition) position);
+		} else {
+			throw new UnsupportedOperationException();
+		}
 	}
 
 	@Override
@@ -182,5 +219,11 @@ public class SnakeInRectangleOccupation implements IWorldOccupation<ISnakeWorldI
 
 	public void eatApple() {
 		snake.capacity++;
+	}
+
+	public void appleConsumed(TwoDimensionPosition newHeadPosition) {
+		if (!apples.remove(newHeadPosition)) {
+			throw new IllegalStateException("Can not consumer inexistant apple");
+		}
 	}
 }
