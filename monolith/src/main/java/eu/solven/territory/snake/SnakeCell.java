@@ -1,8 +1,12 @@
 package eu.solven.territory.snake;
 
 import java.util.LinkedList;
+import java.util.Random;
+import java.util.function.Supplier;
 
 import eu.solven.territory.snake.ISnakeMarkers.IsSnake;
+import eu.solven.territory.snake.strategies.dummy.WholeSnake;
+import eu.solven.territory.snake.strategies.v1_cansmell.WholeSnake_SmellApplesLoseWeightWithTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -28,6 +32,14 @@ public class SnakeCell extends SnakeOrApple implements ISnakeCell, IsSnake {
 
 	public static SnakeCell headToRight() {
 		WholeSnake wholeSnake = new WholeSnake(1, new LinkedList<>());
+		SnakeCell head = new SnakeCell(wholeSnake, true, 0, 0);
+		wholeSnake.appendAsHead(head);
+
+		return head;
+	}
+
+	public static SnakeCell headToRight_canSmell(Supplier<Random> randomSupplier) {
+		WholeSnake wholeSnake = new WholeSnake_SmellApplesLoseWeightWithTime(randomSupplier, 1, new LinkedList<>());
 		SnakeCell head = new SnakeCell(wholeSnake, true, 0, 0);
 		wholeSnake.appendAsHead(head);
 

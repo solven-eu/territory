@@ -1,8 +1,5 @@
 package eu.solven.territory.app.mvc;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.GetMapping;

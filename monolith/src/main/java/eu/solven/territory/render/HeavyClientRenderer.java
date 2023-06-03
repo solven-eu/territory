@@ -13,12 +13,11 @@ import com.google.common.eventbus.Subscribe;
 
 import eu.solven.territory.DeadCell;
 import eu.solven.territory.GameContext;
-import eu.solven.territory.IWorldCell;
 import eu.solven.territory.IGameRenderer;
 import eu.solven.territory.IMapWindow;
-import eu.solven.territory.IWorldOccupation;
 import eu.solven.territory.ITerritoryMap;
-import eu.solven.territory.two_dimensions.RectangleOccupation;
+import eu.solven.territory.IWorldCell;
+import eu.solven.territory.IWorldOccupation;
 import eu.solven.territory.two_dimensions.SquareMap;
 import eu.solven.territory.two_dimensions.TwoDimensionPosition;
 

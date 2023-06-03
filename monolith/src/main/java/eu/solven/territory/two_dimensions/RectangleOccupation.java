@@ -6,19 +6,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Sets;
 
-import eu.solven.territory.IWorldCell;
 import eu.solven.territory.ICellMarker;
 import eu.solven.territory.ICellPosition;
 import eu.solven.territory.IMapWindow;
+import eu.solven.territory.IWorldCell;
 import eu.solven.territory.IWorldOccupation;
-import eu.solven.territory.game_of_life.LiveCell;
 
 /**
  * A basic Rectangle {@link IWorldOccupation}.

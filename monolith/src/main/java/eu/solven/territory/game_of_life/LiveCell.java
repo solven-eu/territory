@@ -1,7 +1,7 @@
 package eu.solven.territory.game_of_life;
 
-import eu.solven.territory.IWorldCell;
 import eu.solven.territory.ICellMarker;
+import eu.solven.territory.IWorldCell;
 import lombok.Data;
 
 @Data

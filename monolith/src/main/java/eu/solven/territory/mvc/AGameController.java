@@ -29,10 +29,10 @@ import com.indvd00m.ascii.render.elements.plot.api.IPlotPoint;
 import com.indvd00m.ascii.render.elements.plot.misc.PlotPoint;
 
 import eu.solven.territory.GameContext;
-import eu.solven.territory.IWorldCell;
 import eu.solven.territory.IExpansionCycleRule;
 import eu.solven.territory.IGameRenderer;
 import eu.solven.territory.IMapWindow;
+import eu.solven.territory.IWorldCell;
 import eu.solven.territory.IWorldOccupation;
 import eu.solven.territory.render.ShowSwing;
 import eu.solven.territory.two_dimensions.SquareMap;
@@ -117,7 +117,7 @@ public abstract class AGameController<A extends IWorldCell> {
 		String s = generateAscii(squareMap, playerNewSituation);
 		// System.out.println(s);
 
-		s = s.replaceAll(" ", "&nbsp;");
+		s = s.replace(" ", "&nbsp;");
 
 		String pre = Stream.of(s.split("[\r\n]")).collect(Collectors.joining("<br/>"));
 

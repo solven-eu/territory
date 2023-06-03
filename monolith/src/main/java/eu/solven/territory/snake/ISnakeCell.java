@@ -1,5 +1,7 @@
 package eu.solven.territory.snake;
 
+import eu.solven.territory.snake.strategies.dummy.WholeSnake;
+
 public interface ISnakeCell extends ISnakeWorldItem {
 
 	boolean isHead();

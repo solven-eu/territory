@@ -4,13 +4,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
-import eu.solven.territory.IWorldCell;
 import eu.solven.territory.ICellPosition;
 import eu.solven.territory.IMapWindow;
-import eu.solven.territory.game_of_life.GameOfLife;
-import eu.solven.territory.game_of_life.LiveCell;
+import eu.solven.territory.IWorldCell;
 
 /**
  * A centered rectangle {@link IMapWindow}. It is guaranteed to have odd-size width and height, to have an unambiguous
@@ -37,9 +34,9 @@ public class RectangleWindow<A extends IWorldCell> implements IMapWindow<A>, IIs
 		this.width = halfToFull(halfWidth);
 		this.height = halfToFull(halfHeight);
 		if (halfWidth == 0) {
-			assert window.size() == 0;
+			assert window.isEmpty();
 		} else if (halfHeight == 0) {
-			assert window.size() == 0;
+			assert window.isEmpty();
 		} else {
 			assert window.size() == width * height;
 		}

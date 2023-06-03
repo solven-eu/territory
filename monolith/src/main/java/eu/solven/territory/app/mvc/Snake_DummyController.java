@@ -1,8 +1,5 @@
 package eu.solven.territory.app.mvc;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,31 +14,31 @@ import eu.solven.territory.mvc.AGameController;
 import eu.solven.territory.snake.GameOfSnakeRenderer;
 import eu.solven.territory.snake.ISnakeWorldItem;
 import eu.solven.territory.snake.SnakeInRectangleOccupation;
+import eu.solven.territory.snake.strategies.dummy.WholeSnake;
 import eu.solven.territory.snake.v0_only_snake.GameOfSnake;
 import eu.solven.territory.two_dimensions.SquareMap;
 import eu.solven.territory.two_dimensions.TwoDimensionPosition;
 
 @RestController
 @RequestMapping("/snake")
-public class SnakeController extends AGameController<ISnakeWorldItem> {
-	private static final Logger LOGGER = LoggerFactory.getLogger(SnakeController.class);
+public class Snake_DummyController extends AGameController<ISnakeWorldItem> {
+	private static final Logger LOGGER = LoggerFactory.getLogger(Snake_DummyController.class);
 
 	final SquareMap squareMap = new SquareMap(20);
 	final IExpansionCycleRule<ISnakeWorldItem> game = new GameOfSnake(squareMap);
 
-	public SnakeController(EventBus eventBus) {
+	public Snake_DummyController(EventBus eventBus) {
 		super(eventBus);
 
-		swing("anonymous");
-
-		Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
-			try {
-				updateAndGetNextTurn(getGame(), "anonymous");
-			} catch (RuntimeException e) {
-				LOGGER.warn("ARG", e);
-			}
-		}, 1, 1, TimeUnit.SECONDS);
-
+		// swing("anonymous");
+		//
+		// Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
+		// try {
+		// updateAndGetNextTurn(getGame(), "anonymous");
+		// } catch (RuntimeException e) {
+		// LOGGER.warn("ARG", e);
+		// }
+		// }, 1, 1, TimeUnit.SECONDS);
 	}
 
 	@Override
@@ -69,7 +66,8 @@ public class SnakeController extends AGameController<ISnakeWorldItem> {
 		TwoDimensionPosition initialPosition =
 				new TwoDimensionPosition(squareMap.getWidth() / 2, squareMap.getHeight() / 2);
 
-		SnakeInRectangleOccupation withBaby = SnakeInRectangleOccupation.baby(squareMap, initialPosition);
+		SnakeInRectangleOccupation withBaby =
+				SnakeInRectangleOccupation.baby(squareMap, initialPosition, WholeSnake.baby());
 
 		return withBaby;
 	}

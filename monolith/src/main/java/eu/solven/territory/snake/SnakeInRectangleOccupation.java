@@ -12,6 +12,7 @@ import eu.solven.territory.ICellPosition;
 import eu.solven.territory.IMapWindow;
 import eu.solven.territory.IWorldOccupation;
 import eu.solven.territory.snake.ISnakeMarkers.IsApple;
+import eu.solven.territory.snake.strategies.dummy.WholeSnake;
 import eu.solven.territory.snake.v0_only_snake.GameOfSnake;
 import eu.solven.territory.two_dimensions.IIsRectangle;
 import eu.solven.territory.two_dimensions.RectangleWindow;
@@ -53,12 +54,13 @@ public class SnakeInRectangleOccupation implements IWorldOccupation<ISnakeWorldI
 	}
 
 	public static <S extends ISnakeWorldItem> SnakeInRectangleOccupation baby(SquareMap map,
-			TwoDimensionPosition headPosition) {
+			TwoDimensionPosition headPosition,
+			WholeSnake baby) {
 		if (!map.isRectangleLike()) {
 			throw new IllegalArgumentException("!rectangle");
 		}
 
-		return new SnakeInRectangleOccupation(map, WholeSnake.baby(), headPosition);
+		return new SnakeInRectangleOccupation(map, baby, headPosition);
 	}
 
 	@Override
@@ -79,7 +81,7 @@ public class SnakeInRectangleOccupation implements IWorldOccupation<ISnakeWorldI
 			{
 				TwoDimensionPosition cellPosition = refHeadPosition.get();
 
-				for (ISnakeCell currentCell : snake.cells) {
+				for (ISnakeCell currentCell : snake.getCells()) {
 					if (marker.isAssignableFrom(currentCell.getClass())) {
 						fill(cellPosition, rectangleWindow);
 						cellPositionConsumer.accept(cellPosition);
@@ -212,18 +214,18 @@ public class SnakeInRectangleOccupation implements IWorldOccupation<ISnakeWorldI
 	public void newHead(ISnakeCell head, int direction) {
 		snake.getHead().newHead(direction);
 
-		if (snake.cells.stream().filter(c -> c.isHead()).count() != 1) {
+		if (snake.getCells().stream().filter(c -> c.isHead()).count() != 1) {
 			throw new IllegalArgumentException("We have multiple heads");
 		}
-	}
-
-	public void eatApple() {
-		snake.capacity++;
 	}
 
 	public void appleConsumed(TwoDimensionPosition newHeadPosition) {
 		if (!apples.remove(newHeadPosition)) {
 			throw new IllegalStateException("Can not consumer inexistant apple");
 		}
+	}
+
+	public WholeSnake getSnake() {
+		return snake;
 	}
 }

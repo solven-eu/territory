@@ -1,8 +1,13 @@
-package eu.solven.territory.snake;
+package eu.solven.territory.snake.strategies.dummy;
 
+import java.util.Collection;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.stream.Collectors;
+
+import eu.solven.territory.snake.ISnakeCell;
+import eu.solven.territory.snake.SnakeCell;
+import eu.solven.territory.snake.v0_only_snake.IDirectionPicker;
 
 public class WholeSnake {
 	// May grow when eating fruits
@@ -16,7 +21,7 @@ public class WholeSnake {
 		return babySnakeHead.getWhole();
 	}
 
-	protected WholeSnake(int capacity, Deque<ISnakeCell> cells) {
+	public WholeSnake(int capacity, Deque<ISnakeCell> cells) {
 		this.capacity = capacity;
 		this.cells = cells;
 	}
@@ -34,7 +39,7 @@ public class WholeSnake {
 			throw new IllegalStateException("Can not append a head is there is already one");
 		}
 
-		if (cells.size() >= capacity) {
+		if (cells.size() >= getCapacity()) {
 			// Lose tail before adding new head
 			loseTail();
 		}
@@ -42,12 +47,16 @@ public class WholeSnake {
 		cells.addFirst(head);
 	}
 
+	public void loseWeight() {
+		loseTail();
+	}
+
 	public void loseTail() {
 		cells.pollLast();
 	}
 
 	public WholeSnake copy() {
-		WholeSnake newSnake = new WholeSnake(capacity, new LinkedList<>());
+		WholeSnake newSnake = new WholeSnake(getCapacity(), new LinkedList<>());
 
 		LinkedList<ISnakeCell> newCells =
 				cells.stream().map(cell -> cell.editSnake(newSnake)).collect(Collectors.toCollection(LinkedList::new));
@@ -65,7 +74,19 @@ public class WholeSnake {
 		return cells.getFirst();
 	}
 
-	public Iterable<ISnakeCell> getCells() {
-		return (Iterable<ISnakeCell>) cells;
+	public Collection<ISnakeCell> getCells() {
+		return (Collection<ISnakeCell>) cells;
+	}
+
+	public IDirectionPicker getDirectionPicker() {
+		return new LeftElseRight();
+	}
+
+	public void eatApple() {
+		capacity = getCapacity() + 1;
+	}
+
+	public int getCapacity() {
+		return capacity;
 	}
 }

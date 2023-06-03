@@ -3,9 +3,9 @@ package eu.solven.territory.snake;
 import java.awt.Color;
 
 import eu.solven.territory.DeadCell;
+import eu.solven.territory.IGameRenderer;
 import eu.solven.territory.IWorldCell;
 import eu.solven.territory.snake.ISnakeMarkers.IsApple;
-import eu.solven.territory.IGameRenderer;
 
 public class GameOfSnakeRenderer implements IGameRenderer {
 	@Override

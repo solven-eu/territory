@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import eu.solven.territory.ICellPosition;
 import eu.solven.territory.IExpansionCycleRule;
 import eu.solven.territory.IMapWindow;
+import eu.solven.territory.ITerritoryMap;
 import eu.solven.territory.IWorldOccupation;
 import eu.solven.territory.snake.Apple;
 import eu.solven.territory.snake.ISnakeCell;
@@ -17,6 +18,7 @@ import eu.solven.territory.snake.ISnakeWorldItem;
 import eu.solven.territory.snake.SnakeCell;
 import eu.solven.territory.snake.SnakeInRectangleOccupation;
 import eu.solven.territory.snake.SnakeTurnContext;
+import eu.solven.territory.snake.strategies.v1_cansmell.ICanSmell;
 import eu.solven.territory.two_dimensions.SquareMap;
 import eu.solven.territory.two_dimensions.TwoDimensionPosition;
 
@@ -70,49 +72,58 @@ public class GameOfSnake implements IExpansionCycleRule<ISnakeWorldItem> {
 			// Process the head
 			occupation.forEachLiveCell(ISnakeMarkers.IsSnake.class, windowBuffer, position -> {
 				SnakeCell currentHead = (SnakeCell) windowBuffer.getCenter();
-				// assert currentHead.getCellIndex() == SNAKE;
-
 				if (!currentHead.isHead()) {
 					return;
 				}
 
-				TwoDimensionPosition newHeadPosition = null;
-				int newDirection = -1;
+				IDirectionPicker directionPicker = currentHead.getWhole().getDirectionPicker();
 
-				for (int optDirection : new int[] {
-						// Try moving forward
-						currentHead.getDirection(),
-						// Can not move forward: try turning left or right
-						turnLeft(currentHead),
-						// Left is also outOfWorld, let's turn right
-						turnRight(currentHead) }) {
-					TwoDimensionPosition optNextHead = nextHead(position, optDirection);
+				int newDirection = directionPicker.pickDirection(map, context, position, currentHead);
 
-					if (canBeNextHead(context, optNextHead)) {
-						newHeadPosition = optNextHead;
-						newDirection = optDirection;
+				TwoDimensionPosition newHeadPosition;
+				if (newDirection == IDirectionPicker.NO_DIRECTION) {
+					newHeadPosition = (TwoDimensionPosition) position;
 
-						break;
-					}
-				}
-
-				if (newDirection == -1) {
 					// Losing its tail, until length==1 shall unlock the Snake, except if world is size== 1
-					LOGGER.info("Snake can not move: it loses its tail");
-					currentHead.getWhole().loseTail();
+					LOGGER.info(
+							"Snake can not move: it loses weight (potentially losing its tail, potentially freeing the way");
+					currentHead.getWhole().loseWeight();
 				} else {
+					newHeadPosition = nextHead(position, newDirection);
+
 					if (context.isApple(newHeadPosition)) {
 						snakeCopy.appleConsumed(newHeadPosition);
-						snakeCopy.eatApple();
+						snakeCopy.getSnake().eatApple();
+					} else {
+						currentHead.getWhole().loseWeight();
 					}
 
 					snakeCopy.newHead(currentHead, newDirection);
 					snakeCopy.headPosition(newHeadPosition);
 				}
+
+				if (snakeCopy.getSnake() instanceof ICanSmell canSmell) {
+					double distance = distance(newHeadPosition, context.getOccupiedByApple());
+
+					canSmell.smells(distance);
+				}
 			});
 		}
 
 		return rawCopy;
+	}
+
+	// We consider the distance smelt is the distance to the nearest item
+	private double distance(ICellPosition position, Set<ICellPosition> occupiedByApple) {
+		if (position instanceof TwoDimensionPosition twoD) {
+			return occupiedByApple.stream()
+					.map(c -> (TwoDimensionPosition) c)
+					.mapToDouble(c -> Math.pow(c.getX() - twoD.getX(), 2D) + Math.pow(c.getY() - twoD.getY(), 2D))
+					.min()
+					.orElse(Double.MAX_VALUE);
+		} else {
+			return Double.MAX_VALUE;
+		}
 	}
 
 	private SnakeTurnContext buildContext(IWorldOccupation<ISnakeWorldItem> occupation,
@@ -141,10 +152,10 @@ public class GameOfSnake implements IExpansionCycleRule<ISnakeWorldItem> {
 		return (head.getDirection() + 2) % 4;
 	}
 
-	protected boolean canBeNextHead(SnakeTurnContext context, TwoDimensionPosition position) {
+	public static boolean canBeNextHead(ITerritoryMap map, SnakeTurnContext context, TwoDimensionPosition position) {
 		Set<ICellPosition> occupiedBySnake = context.getOccupiedBySnake();
 
-		return !isOutOfWorld(position) && !occupiedBySnake.contains(position);
+		return !map.isOutOfWorld(position) && !occupiedBySnake.contains(position);
 	}
 
 	public static TwoDimensionPosition nextHead(ICellPosition position, int direction) {
@@ -167,16 +178,6 @@ public class GameOfSnake implements IExpansionCycleRule<ISnakeWorldItem> {
 		}
 
 		return (TwoDimensionPosition) position.shift(shift);
-	}
-
-	private boolean isOutOfWorld(TwoDimensionPosition optNextHead) {
-		if (optNextHead.getX() < 0 || optNextHead.getX() >= map.getWidth()) {
-			return true;
-		} else if (optNextHead.getY() < 0 || optNextHead.getY() >= map.getHeight()) {
-			return true;
-		} else {
-			return false;
-		}
 	}
 
 }
