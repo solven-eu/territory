@@ -5,6 +5,9 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.collect.Sets;
 
 import eu.solven.territory.ICellMarker;
@@ -28,6 +31,8 @@ import eu.solven.territory.two_dimensions.TwoDimensionPosition;
  *
  */
 public class SnakeInRectangleOccupation implements IWorldOccupation<ISnakeWorldItem> {
+	private static final Logger LOGGER = LoggerFactory.getLogger(SnakeInRectangleOccupation.class);
+
 	final IIsRectangle map;
 	final WholeSnake snake;
 
@@ -78,27 +83,41 @@ public class SnakeInRectangleOccupation implements IWorldOccupation<ISnakeWorldI
 			IMapWindow<ISnakeWorldItem> windowBuffer,
 			Consumer<ICellPosition> cellPositionConsumer) {
 		if (windowBuffer instanceof RectangleWindow<ISnakeWorldItem> rectangleWindow) {
+			// for each snake cell
 			{
 				TwoDimensionPosition cellPosition = refHeadPosition.get();
 
 				for (ISnakeCell currentCell : snake.getCells()) {
 					if (marker.isAssignableFrom(currentCell.getClass())) {
-						fill(cellPosition, rectangleWindow);
-						cellPositionConsumer.accept(cellPosition);
+						fillAndCheckCallback(marker, cellPositionConsumer, rectangleWindow, cellPosition);
 					}
 
+					// Walk-back the snake
 					cellPosition = GameOfSnake.nextHead(cellPosition, GameOfSnake.behind(currentCell));
 				}
 			}
 
-			for (ICellPosition cellPosition : apples) {
+			// for each apple
+			for (TwoDimensionPosition cellPosition : apples) {
 				if (marker.isAssignableFrom(Apple.class)) {
-					fill((TwoDimensionPosition) cellPosition, rectangleWindow);
-					cellPositionConsumer.accept(cellPosition);
+					fillAndCheckCallback(marker, cellPositionConsumer, rectangleWindow, cellPosition);
 				}
 			}
 		} else {
 			throw new IllegalArgumentException("!rectangle");
+		}
+	}
+
+	private void fillAndCheckCallback(Class<? extends ICellMarker> marker,
+			Consumer<ICellPosition> cellPositionConsumer,
+			RectangleWindow<ISnakeWorldItem> rectangleWindow,
+			TwoDimensionPosition cellPosition) {
+		fill(cellPosition, rectangleWindow);
+
+		// We check for the actual center-type, as there may be collisions (e.g. an apple popping under
+		// the snake)
+		if (marker.isAssignableFrom(rectangleWindow.getCenter().getClass())) {
+			cellPositionConsumer.accept(cellPosition);
 		}
 	}
 
@@ -130,6 +149,7 @@ public class SnakeInRectangleOccupation implements IWorldOccupation<ISnakeWorldI
 	}
 
 	private void fill(TwoDimensionPosition position, RectangleWindow<ISnakeWorldItem> windowBuffer) {
+		// Reset, as we will write only live positions
 		windowBuffer.reset();
 
 		int x = position.getX();
@@ -155,7 +175,12 @@ public class SnakeInRectangleOccupation implements IWorldOccupation<ISnakeWorldI
 			if (isOutOfWorldCentered(windowBuffer, shiftX, shiftY)) {
 				// This part of the snake is out of the window, but it may later come back into it
 			} else {
-				windowBuffer.setValue(shiftX, shiftY, currentCell);
+				ISnakeWorldItem previous = windowBuffer.setValue(shiftX, shiftY, currentCell);
+				if (previous != null) {
+					// LOGGER.warn("Snake is walking itself")
+					throw new IllegalStateException(
+							"A cell is being occupied by both " + previous + " and " + currentCell);
+				}
 			}
 
 			headPosition = GameOfSnake.nextHead(headPosition, GameOfSnake.behind(currentCell));
@@ -170,7 +195,15 @@ public class SnakeInRectangleOccupation implements IWorldOccupation<ISnakeWorldI
 			if (isOutOfWorldCentered(windowBuffer, shiftX, shiftY)) {
 				// This part of the snake is out of the window, but it may later come back into it
 			} else {
-				windowBuffer.setValue(shiftX, shiftY, new Apple());
+				Apple apple = new Apple();
+				ISnakeWorldItem previous = windowBuffer.setValue(shiftX, shiftY, apple);
+				if (previous != null) {
+					// LOGGER.warn("An apple is under the snake");
+					// We set back previous value, as the apple is considered as not eadable yet, hence it can be kind
+					// of hidden
+					// windowBuffer.setValue(shiftX, shiftY, previous);
+					throw new IllegalStateException("A cell is being occupied by both " + previous + " and " + apple);
+				}
 			}
 		});
 	}

@@ -113,7 +113,7 @@ public class RectangleWindow<A extends IWorldCell> implements IMapWindow<A>, IIs
 	 * @param value
 	 */
 	// @Override
-	public void setValue(int centeredX, int centeredY, A value) {
+	public A setValue(int centeredX, int centeredY, A value) {
 		int halfWidth = fullToHalf(getWidth());
 		int halfHeight = fullToHalf(getHeight());
 
@@ -125,7 +125,7 @@ public class RectangleWindow<A extends IWorldCell> implements IMapWindow<A>, IIs
 
 		int shiftedX = halfWidth + centeredX;
 		int shiftedY = halfHeight + centeredY;
-		window.set(shiftedX + width * shiftedY, value);
+		return window.set(shiftedX + width * shiftedY, value);
 	}
 
 	@Override

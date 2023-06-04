@@ -13,7 +13,9 @@ import eu.solven.territory.snake.strategies.dummy.WholeSnake;
 import eu.solven.territory.snake.v0_only_snake.IDirectionPicker;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.doubles.DoubleList;
+import lombok.ToString;
 
+@ToString
 public class WholeSnake_SmellApplesLoseWeightWithTime extends WholeSnake implements ICanSmell {
 	// hunger typically goes from 100 to 0
 	// 100 means the stomach is full
@@ -56,6 +58,8 @@ public class WholeSnake_SmellApplesLoseWeightWithTime extends WholeSnake impleme
 		newCells.forEach(newSnake::appendToTail);
 
 		distances.forEach(newSnake::smells);
+
+		newSnake.hunger = hunger;
 
 		return newSnake;
 	}

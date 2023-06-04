@@ -23,19 +23,25 @@ public class ShowSwing {
 
 		// contentPane.setLayout(layout);
 
-		f.setVisible(true);
-
 		if (refGameContext.get().getMap() instanceof SquareMap square) {
 			f.setSize(500, 500);
 			f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 			HeavyClientRenderer component = new HeavyClientRenderer(eventBus, refGameContext);
+
+			component.setVisible(true);
+			component.repaint();
+
 			// layout.addLayoutComponent("grid", component);
 			f.add(component);
 
 			f.invalidate();
 			f.repaint();
+			// f.pack();
 		} else {
 			LOGGER.warn("!2D");
 		}
+
+		// AFTER adding components
+		f.setVisible(true);
 	}
 }

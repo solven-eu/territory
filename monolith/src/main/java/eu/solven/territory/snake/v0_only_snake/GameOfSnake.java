@@ -2,6 +2,7 @@ package eu.solven.territory.snake.v0_only_snake;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,12 +40,31 @@ public class GameOfSnake implements IExpansionCycleRule<ISnakeWorldItem> {
 
 	final SquareMap map;
 
+	final AtomicInteger cycleIndex = new AtomicInteger();
+
 	public GameOfSnake(SquareMap map) {
 		this.map = map;
 	}
 
 	@Override
 	public IWorldOccupation<ISnakeWorldItem> cycle(IWorldOccupation<ISnakeWorldItem> occupation) {
+		int cyrrentCycle = cycleIndex.getAndIncrement();
+
+		// if (cyrrentCycle == 714) {
+		// LOGGER.info("?");
+		// }
+
+		IWorldOccupation<ISnakeWorldItem> rawCopy = rawCycle(occupation);
+
+		LOGGER.debug("Done with {}", cyrrentCycle);
+
+		// We compute ahead of time the next cycle. It will make it easier to see previous state given a new error
+		// rawCycle(rawCopy);
+
+		return rawCopy;
+	}
+
+	private IWorldOccupation<ISnakeWorldItem> rawCycle(IWorldOccupation<ISnakeWorldItem> occupation) {
 		IWorldOccupation<ISnakeWorldItem> rawCopy = occupation.mutableCopy();
 
 		int includeSelfRadius = 1;
@@ -66,7 +86,13 @@ public class GameOfSnake implements IExpansionCycleRule<ISnakeWorldItem> {
 			if (missingApples > 0) {
 				// Apples can pop anywhere, even under the snake
 				ICellPosition randomPosition = map.randomPosition();
-				snakeCopy.setValue(randomPosition, new Apple());
+
+				if (context.getOccupiedBySnake().contains(randomPosition)) {
+					LOGGER.debug("We reject registration of an apple as the cell is occupied");
+				} else {
+					snakeCopy.setValue(randomPosition, new Apple());
+				}
+
 			}
 
 			// Process the head
@@ -87,7 +113,7 @@ public class GameOfSnake implements IExpansionCycleRule<ISnakeWorldItem> {
 					// Losing its tail, until length==1 shall unlock the Snake, except if world is size== 1
 					LOGGER.info(
 							"Snake can not move: it loses weight (potentially losing its tail, potentially freeing the way");
-					currentHead.getWhole().loseWeight();
+					snakeCopy.getSnake().loseWeight();
 				} else {
 					newHeadPosition = nextHead(position, newDirection);
 
@@ -95,7 +121,7 @@ public class GameOfSnake implements IExpansionCycleRule<ISnakeWorldItem> {
 						snakeCopy.appleConsumed(newHeadPosition);
 						snakeCopy.getSnake().eatApple();
 					} else {
-						currentHead.getWhole().loseWeight();
+						snakeCopy.getSnake().loseWeight();
 					}
 
 					snakeCopy.newHead(currentHead, newDirection);

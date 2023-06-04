@@ -46,7 +46,6 @@ public class HeavyClientRenderer<A extends IWorldCell> extends JComponent {
 		GameContext<A> gameContext = refGameContext.get();
 		IWorldOccupation<A> occupation = gameContext.getOccupation();
 
-		// if (occupation instanceof RectangleOccupation<A> rectangle) {
 		IGameRenderer renderer = refGameContext.get().getRenderer();
 
 		BufferedImage image = new BufferedImage(((SquareMap) gameContext.getMap()).getWidth(),
@@ -77,7 +76,6 @@ public class HeavyClientRenderer<A extends IWorldCell> extends JComponent {
 						Color color = renderer.getCellColor(new DeadCell());
 						image.setRGB(rectangleCell.getX(), rectangleCell.getY(), color.getRGB());
 					}
-
 				}
 			});
 		}
@@ -87,7 +85,6 @@ public class HeavyClientRenderer<A extends IWorldCell> extends JComponent {
 				Image.SCALE_SMOOTH);
 
 		g.drawImage(scaled, 0, 0, this);
-		// }
 	}
 
 	private boolean isOutOfWorld(ITerritoryMap iTerritoryMap, TwoDimensionPosition cellPosition) {
