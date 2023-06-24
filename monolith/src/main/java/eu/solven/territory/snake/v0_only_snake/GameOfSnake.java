@@ -1,3 +1,18 @@
+/*
+ * Copyright 2023 Benoit Lacelle - SOLVEN
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package eu.solven.territory.snake.v0_only_snake;
 
 import java.util.HashSet;
@@ -48,7 +63,7 @@ public class GameOfSnake implements IExpansionCycleRule<ISnakeWorldItem> {
 
 	@Override
 	public IWorldOccupation<ISnakeWorldItem> cycle(IWorldOccupation<ISnakeWorldItem> occupation) {
-		int cyrrentCycle = cycleIndex.getAndIncrement();
+		var cyrrentCycle = cycleIndex.getAndIncrement();
 
 		IWorldOccupation<ISnakeWorldItem> rawCopy = rawCycle(occupation);
 
@@ -63,8 +78,8 @@ public class GameOfSnake implements IExpansionCycleRule<ISnakeWorldItem> {
 	private IWorldOccupation<ISnakeWorldItem> rawCycle(IWorldOccupation<ISnakeWorldItem> occupation) {
 		IWorldOccupation<ISnakeWorldItem> rawCopy = occupation.mutableCopy();
 
-		int includeSelfRadius = 1;
-		int gameOfLifeRadius = 1;
+		var includeSelfRadius = 1;
+		var gameOfLifeRadius = 1;
 		IMapWindow<ISnakeWorldItem> windowBuffer = occupation.makeWindowBuffer(includeSelfRadius + gameOfLifeRadius);
 
 		SnakeTurnContext context = buildContext(occupation, windowBuffer);
@@ -129,9 +144,9 @@ public class GameOfSnake implements IExpansionCycleRule<ISnakeWorldItem> {
 		int worldSize = map.size();
 
 		// 1 apple plus one apple per 10x10 blocks
-		int targetNbApples = 1 + worldSize / (10 * 10);
+		var targetNbApples = 1 + worldSize / (10 * 10);
 
-		int missingApples = Math.max(0, targetNbApples - nbApples);
+		var missingApples = Math.max(0, targetNbApples - nbApples);
 
 		if (missingApples > 0) {
 			// Apples can pop anywhere, even under the snake
