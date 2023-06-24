@@ -3,13 +3,18 @@ package eu.solven.territory.snake.strategies.dummy;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.LinkedList;
+import java.util.UUID;
 import java.util.stream.Collectors;
+
+import javax.annotation.Nonnull;
 
 import eu.solven.territory.snake.ISnakeCell;
 import eu.solven.territory.snake.SnakeCell;
 import eu.solven.territory.snake.v0_only_snake.IDirectionPicker;
 
 public class WholeSnake {
+	final UUID uuid;
+
 	// May grow when eating fruits
 	int capacity = 1;
 
@@ -22,6 +27,11 @@ public class WholeSnake {
 	}
 
 	public WholeSnake(int capacity, Deque<ISnakeCell> cells) {
+		this(UUID.randomUUID(), capacity, cells);
+	}
+
+	protected WholeSnake(UUID uuid, int capacity, Deque<ISnakeCell> cells) {
+		this.uuid = uuid;
 		this.capacity = capacity;
 		this.cells = cells;
 	}
@@ -56,7 +66,7 @@ public class WholeSnake {
 	}
 
 	public WholeSnake copy() {
-		WholeSnake newSnake = new WholeSnake(getCapacity(), new LinkedList<>());
+		WholeSnake newSnake = new WholeSnake(uuid, getCapacity(), new LinkedList<>());
 
 		LinkedList<ISnakeCell> newCells =
 				cells.stream().map(cell -> cell.editSnake(newSnake)).collect(Collectors.toCollection(LinkedList::new));
@@ -88,5 +98,10 @@ public class WholeSnake {
 
 	public int getCapacity() {
 		return capacity;
+	}
+
+	@Nonnull
+	public UUID getId() {
+		return uuid;
 	}
 }

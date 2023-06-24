@@ -17,9 +17,10 @@ import eu.solven.territory.snake.ISnakeCell;
 import eu.solven.territory.snake.ISnakeMarkers;
 import eu.solven.territory.snake.ISnakeWorldItem;
 import eu.solven.territory.snake.SnakeCell;
-import eu.solven.territory.snake.SnakeInRectangleOccupation;
 import eu.solven.territory.snake.SnakeTurnContext;
+import eu.solven.territory.snake.strategies.dummy.WholeSnake;
 import eu.solven.territory.snake.strategies.v1_cansmell.ICanSmell;
+import eu.solven.territory.snake.strategies.v2_multiplesnakes.MultipleSnakeInRectangleOccupation;
 import eu.solven.territory.two_dimensions.SquareMap;
 import eu.solven.territory.two_dimensions.TwoDimensionPosition;
 
@@ -30,8 +31,8 @@ import eu.solven.territory.two_dimensions.TwoDimensionPosition;
  *
  */
 // https://fr.wikipedia.org/wiki/Snake_(genre_de_jeu_vid%C3%A9o)
-public class GameOfSnake implements IExpansionCycleRule<ISnakeWorldItem> {
-	private static final Logger LOGGER = LoggerFactory.getLogger(GameOfSnake.class);
+public class GameOfSnake_Multiple implements IExpansionCycleRule<ISnakeWorldItem> {
+	private static final Logger LOGGER = LoggerFactory.getLogger(GameOfSnake_Multiple.class);
 
 	public static final int OFF_WORLD = -1;
 	public static final int DEAD = 0;
@@ -42,7 +43,7 @@ public class GameOfSnake implements IExpansionCycleRule<ISnakeWorldItem> {
 
 	final AtomicInteger cycleIndex = new AtomicInteger();
 
-	public GameOfSnake(SquareMap map) {
+	public GameOfSnake_Multiple(SquareMap map) {
 		this.map = map;
 	}
 
@@ -69,7 +70,7 @@ public class GameOfSnake implements IExpansionCycleRule<ISnakeWorldItem> {
 
 		SnakeTurnContext context = buildContext(occupation, windowBuffer);
 
-		if (rawCopy instanceof SnakeInRectangleOccupation snakeCopy) {
+		if (rawCopy instanceof MultipleSnakeInRectangleOccupation snakeCopy) {
 			growApples(context, snakeCopy);
 
 			// Process each snake heads
@@ -87,12 +88,15 @@ public class GameOfSnake implements IExpansionCycleRule<ISnakeWorldItem> {
 	}
 
 	private void snakeAction(SnakeTurnContext context,
-			SnakeInRectangleOccupation snakeCopy,
+			MultipleSnakeInRectangleOccupation snakeCopy,
 			ICellPosition position,
 			SnakeCell currentHead) {
 		IDirectionPicker directionPicker = currentHead.getWhole().getDirectionPicker();
 
 		int newDirection = directionPicker.pickDirection(map, context, position, currentHead);
+
+		ISnakeCell copyHead = snakeCopy.getHead(currentHead);
+		WholeSnake copySnake = copyHead.getWhole();
 
 		TwoDimensionPosition newHeadPosition;
 		if (newDirection == IDirectionPicker.NO_DIRECTION) {
@@ -101,29 +105,29 @@ public class GameOfSnake implements IExpansionCycleRule<ISnakeWorldItem> {
 			// Losing its tail, until length==1 shall unlock the Snake, except if world is size== 1
 			LOGGER.info(
 					"Snake can not move: it loses weight (potentially losing its tail, potentially freeing the way");
-			snakeCopy.getSnake().loseWeight();
+			copySnake.loseWeight();
 		} else {
 			newHeadPosition = nextHead(position, newDirection);
 
 			if (context.isApple(newHeadPosition)) {
 				snakeCopy.appleConsumed(newHeadPosition);
-				snakeCopy.getSnake().eatApple();
+				copySnake.eatApple();
 			} else {
-				snakeCopy.getSnake().loseWeight();
+				copySnake.loseWeight();
 			}
 
 			snakeCopy.newHead(currentHead, newDirection);
-			snakeCopy.headPosition(newHeadPosition);
+			snakeCopy.headPosition(currentHead, newHeadPosition);
 		}
 
-		if (snakeCopy.getSnake() instanceof ICanSmell canSmell) {
+		if (copySnake instanceof ICanSmell canSmell) {
 			double distance = distance(newHeadPosition, context.getOccupiedByApple());
 
 			canSmell.smells(distance);
 		}
 	}
 
-	private void growApples(SnakeTurnContext context, SnakeInRectangleOccupation snakeCopy) {
+	private void growApples(SnakeTurnContext context, MultipleSnakeInRectangleOccupation snakeCopy) {
 		int nbApples = context.getOccupiedByApple().size();
 
 		int worldSize = map.size();

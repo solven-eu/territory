@@ -39,7 +39,7 @@ public class SnakeCell extends SnakeOrApple implements ISnakeCell, IsSnake {
 	}
 
 	public static SnakeCell headToRight_canSmell(Supplier<Random> randomSupplier) {
-		WholeSnake wholeSnake = new WholeSnake_SmellApplesLoseWeightWithTime(randomSupplier, 1, new LinkedList<>());
+		WholeSnake wholeSnake = new WholeSnake_SmellApplesLoseWeightWithTime( randomSupplier, 1, new LinkedList<>());
 		SnakeCell head = new SnakeCell(wholeSnake, true, 0, 0);
 		wholeSnake.appendAsHead(head);
 

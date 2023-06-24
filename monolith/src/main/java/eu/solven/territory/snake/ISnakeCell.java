@@ -14,4 +14,6 @@ public interface ISnakeCell extends ISnakeWorldItem {
 
 	void newHead(int direction);
 
+	WholeSnake getWhole();
+
 }

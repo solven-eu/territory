@@ -3,6 +3,7 @@ package eu.solven.territory.snake.strategies.v1_cansmell;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.Random;
+import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -40,7 +41,14 @@ public class WholeSnake_SmellApplesLoseWeightWithTime extends WholeSnake impleme
 	public WholeSnake_SmellApplesLoseWeightWithTime(Supplier<Random> randomSupplier,
 			int capacity,
 			Deque<ISnakeCell> cells) {
-		super(capacity, cells);
+		this(UUID.randomUUID(), randomSupplier, capacity, cells);
+	}
+
+	private WholeSnake_SmellApplesLoseWeightWithTime(UUID uuid,
+			Supplier<Random> randomSupplier,
+			int capacity,
+			Deque<ISnakeCell> cells) {
+		super(uuid, capacity, cells);
 
 		this.randomSupplier = randomSupplier;
 
@@ -48,8 +56,10 @@ public class WholeSnake_SmellApplesLoseWeightWithTime extends WholeSnake impleme
 	}
 
 	public WholeSnake copy() {
-		WholeSnake_SmellApplesLoseWeightWithTime newSnake =
-				new WholeSnake_SmellApplesLoseWeightWithTime(randomSupplier, getCapacity(), new LinkedList<>());
+		WholeSnake_SmellApplesLoseWeightWithTime newSnake = new WholeSnake_SmellApplesLoseWeightWithTime(this.getId(),
+				randomSupplier,
+				getCapacity(),
+				new LinkedList<>());
 
 		LinkedList<ISnakeCell> newCells = getCells().stream()
 				.map(cell -> cell.editSnake(newSnake))

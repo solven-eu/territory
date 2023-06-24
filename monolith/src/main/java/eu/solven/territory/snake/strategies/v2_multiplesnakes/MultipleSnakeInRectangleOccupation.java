@@ -1,9 +1,11 @@
-package eu.solven.territory.snake;
+package eu.solven.territory.snake.strategies.v2_multiplesnakes;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +16,10 @@ import eu.solven.territory.ICellMarker;
 import eu.solven.territory.ICellPosition;
 import eu.solven.territory.IMapWindow;
 import eu.solven.territory.IWorldOccupation;
+import eu.solven.territory.snake.Apple;
+import eu.solven.territory.snake.ISnakeCell;
 import eu.solven.territory.snake.ISnakeMarkers.IsApple;
+import eu.solven.territory.snake.ISnakeWorldItem;
 import eu.solven.territory.snake.strategies.dummy.WholeSnake;
 import eu.solven.territory.snake.v0_only_snake.GameOfSnake;
 import eu.solven.territory.two_dimensions.IIsRectangle;
@@ -30,47 +35,54 @@ import eu.solven.territory.two_dimensions.TwoDimensionPosition;
  * @author Benoit Lacelle
  *
  */
-public class SnakeInRectangleOccupation implements IWorldOccupation<ISnakeWorldItem> {
-	private static final Logger LOGGER = LoggerFactory.getLogger(SnakeInRectangleOccupation.class);
+public class MultipleSnakeInRectangleOccupation implements IWorldOccupation<ISnakeWorldItem> {
+	private static final Logger LOGGER = LoggerFactory.getLogger(MultipleSnakeInRectangleOccupation.class);
 
 	final IIsRectangle map;
-	final WholeSnake snake;
 
-	final AtomicReference<TwoDimensionPosition> refHeadPosition;
+	final Map<Object, PositionnedSnake> positionnedSnakes;
 
 	final Set<TwoDimensionPosition> apples = new HashSet<>();
 
-	public SnakeInRectangleOccupation(IIsRectangle map, WholeSnake snake, TwoDimensionPosition headPosition) {
+	public MultipleSnakeInRectangleOccupation(IIsRectangle map, WholeSnake snake, TwoDimensionPosition headPosition) {
 		this.map = map;
-		this.snake = snake;
 
-		this.refHeadPosition = new AtomicReference<TwoDimensionPosition>(headPosition);
+		this.positionnedSnakes = Map.of(snake.getId(), new PositionnedSnake(snake, headPosition));
 	}
 
-	private SnakeInRectangleOccupation(IIsRectangle map,
-			WholeSnake snake,
-			TwoDimensionPosition headPosition,
-			Set<TwoDimensionPosition> apples) {
+	public MultipleSnakeInRectangleOccupation(IIsRectangle map, PositionnedSnake... snakes) {
 		this.map = map;
-		this.snake = snake;
+		this.positionnedSnakes = Stream.of(snakes).collect(Collectors.toMap(e -> e.getSnake().getId(), e -> e));
 
-		this.refHeadPosition = new AtomicReference<TwoDimensionPosition>(headPosition);
 		this.apples.addAll(apples);
 	}
 
-	public static <S extends ISnakeWorldItem> SnakeInRectangleOccupation baby(SquareMap map,
+	private MultipleSnakeInRectangleOccupation(IIsRectangle map,
+			Map<Object, PositionnedSnake> positionnedSnakes,
+			Set<TwoDimensionPosition> apples) {
+		this.map = map;
+		this.positionnedSnakes = positionnedSnakes;
+
+		this.apples.addAll(apples);
+	}
+
+	public static <S extends ISnakeWorldItem> MultipleSnakeInRectangleOccupation baby(SquareMap map,
 			TwoDimensionPosition headPosition,
 			WholeSnake baby) {
 		if (!map.isRectangleLike()) {
 			throw new IllegalArgumentException("!rectangle");
 		}
 
-		return new SnakeInRectangleOccupation(map, baby, headPosition);
+		return new MultipleSnakeInRectangleOccupation(map, baby, headPosition);
 	}
 
 	@Override
 	public IWorldOccupation<ISnakeWorldItem> mutableCopy() {
-		return new SnakeInRectangleOccupation(map, snake.copy(), refHeadPosition.get(), apples);
+		return new MultipleSnakeInRectangleOccupation(map,
+				positionnedSnakes.entrySet()
+						.stream()
+						.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue().copy())),
+				apples);
 	}
 
 	@Override
@@ -84,10 +96,10 @@ public class SnakeInRectangleOccupation implements IWorldOccupation<ISnakeWorldI
 			Consumer<ICellPosition> cellPositionConsumer) {
 		if (windowBuffer instanceof RectangleWindow<ISnakeWorldItem> rectangleWindow) {
 			// for each snake cell
-			{
-				TwoDimensionPosition cellPosition = refHeadPosition.get();
+			positionnedSnakes.values().forEach(snake -> {
+				TwoDimensionPosition cellPosition = snake.getHeadPosition();
 
-				for (ISnakeCell currentCell : snake.getCells()) {
+				for (ISnakeCell currentCell : snake.getSnake().getCells()) {
 					if (marker.isAssignableFrom(currentCell.getClass())) {
 						fillAndCheckCallback(marker, cellPositionConsumer, rectangleWindow, cellPosition);
 					}
@@ -95,7 +107,7 @@ public class SnakeInRectangleOccupation implements IWorldOccupation<ISnakeWorldI
 					// Walk-back the snake
 					cellPosition = GameOfSnake.nextHead(cellPosition, GameOfSnake.behind(currentCell));
 				}
-			}
+			});
 
 			// for each apple
 			for (TwoDimensionPosition cellPosition : apples) {
@@ -164,27 +176,29 @@ public class SnakeInRectangleOccupation implements IWorldOccupation<ISnakeWorldI
 			}
 		});
 
-		TwoDimensionPosition headPosition = refHeadPosition.get();
+		positionnedSnakes.values().forEach(snake -> {
+			TwoDimensionPosition headPosition = snake.getHeadPosition();
 
-		for (ISnakeCell currentCell : snake.getCells()) {
-			TwoDimensionPosition relativePosition = position.back(headPosition);
+			for (ISnakeCell currentCell : snake.getSnake().getCells()) {
+				TwoDimensionPosition relativePosition = position.back(headPosition);
 
-			int shiftX = relativePosition.getX();
-			int shiftY = relativePosition.getY();
+				int shiftX = relativePosition.getX();
+				int shiftY = relativePosition.getY();
 
-			if (isOutOfWorldCentered(windowBuffer, shiftX, shiftY)) {
-				// This part of the snake is out of the window, but it may later come back into it
-			} else {
-				ISnakeWorldItem previous = windowBuffer.setValue(shiftX, shiftY, currentCell);
-				if (previous != null) {
-					// LOGGER.warn("Snake is walking itself")
-					throw new IllegalStateException(
-							"A cell is being occupied by both " + previous + " and " + currentCell);
+				if (isOutOfWorldCentered(windowBuffer, shiftX, shiftY)) {
+					// This part of the snake is out of the window, but it may later come back into it
+				} else {
+					ISnakeWorldItem previous = windowBuffer.setValue(shiftX, shiftY, currentCell);
+					if (previous != null) {
+						// LOGGER.warn("Snake is walking itself")
+						throw new IllegalStateException(
+								"A cell is being occupied by both " + previous + " and " + currentCell);
+					}
 				}
-			}
 
-			headPosition = GameOfSnake.nextHead(headPosition, GameOfSnake.behind(currentCell));
-		}
+				headPosition = GameOfSnake.nextHead(headPosition, GameOfSnake.behind(currentCell));
+			}
+		});
 
 		apples.forEach(applePosition -> {
 			TwoDimensionPosition relativePosition = position.back(applePosition);
@@ -199,7 +213,7 @@ public class SnakeInRectangleOccupation implements IWorldOccupation<ISnakeWorldI
 				ISnakeWorldItem previous = windowBuffer.setValue(shiftX, shiftY, apple);
 				if (previous != null) {
 					// LOGGER.warn("An apple is under the snake");
-					// We set back previous value, as the apple is considered as not eadable yet, hence it can be kind
+					// We set back previous value, as the apple is considered as not edible yet, hence it can be kind
 					// of hidden
 					// windowBuffer.setValue(shiftX, shiftY, previous);
 					throw new IllegalStateException("A cell is being occupied by both " + previous + " and " + apple);
@@ -240,14 +254,16 @@ public class SnakeInRectangleOccupation implements IWorldOccupation<ISnakeWorldI
 		throw new UnsupportedOperationException();
 	}
 
-	public void headPosition(TwoDimensionPosition newHeadPosition) {
-		refHeadPosition.set(newHeadPosition);
+	public void headPosition(ISnakeCell head, TwoDimensionPosition newHeadPosition) {
+		getPositionnedHead(head).setPosition(newHeadPosition);
 	}
 
 	public void newHead(ISnakeCell head, int direction) {
-		snake.getHead().newHead(direction);
+		ISnakeCell copyHead = getHead(head);
 
-		if (snake.getCells().stream().filter(c -> c.isHead()).count() != 1) {
+		copyHead.newHead(direction);
+
+		if (copyHead.getWhole().getCells().stream().filter(c -> c.isHead()).count() != 1) {
 			throw new IllegalArgumentException("We have multiple heads");
 		}
 	}
@@ -258,7 +274,11 @@ public class SnakeInRectangleOccupation implements IWorldOccupation<ISnakeWorldI
 		}
 	}
 
-	public WholeSnake getSnake() {
-		return snake;
+	public ISnakeCell getHead(ISnakeCell currentHead) {
+		return getPositionnedHead(currentHead).getSnake().getHead();
+	}
+
+	private PositionnedSnake getPositionnedHead(ISnakeCell currentHead) {
+		return positionnedSnakes.get(currentHead.getWhole().getId());
 	}
 }
