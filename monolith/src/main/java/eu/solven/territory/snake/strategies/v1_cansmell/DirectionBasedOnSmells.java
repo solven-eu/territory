@@ -71,9 +71,7 @@ public class DirectionBasedOnSmells implements IDirectionPicker {
 						return currentDirection;
 					}
 				}
-			}
 
-			for (IDirectionPickerStrategy strategy : fallback.getStrategies()) {
 				// We are getting away the food: turn!
 				int left = GameOfSnake.turnLeft(currentHead);
 				int right = GameOfSnake.turnRight(currentHead);

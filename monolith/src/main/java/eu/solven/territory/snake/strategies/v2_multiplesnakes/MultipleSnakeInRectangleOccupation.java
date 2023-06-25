@@ -282,19 +282,16 @@ public class MultipleSnakeInRectangleOccupation implements IWorldOccupation<ISna
 		return positionnedSnakes.get(currentHead.getWhole().getId());
 	}
 
-	public void snakeEaten(TwoDimensionPosition newHeadPosition) {
+	public void snakeEaten(TwoDimensionPosition eatenPosition) {
 		positionnedSnakes.values().forEach(snake -> {
-			TwoDimensionPosition headPosition = snake.getHeadPosition();
+			TwoDimensionPosition snakeCellPosition = snake.getHeadPosition();
 
-			// boolean eaten = false;
-
-			for (ISnakeCell currentCell : snake.getSnake().getCells()) {
-				if (headPosition.equals(newHeadPosition)) {
+			WholeSnake wholeSnake = snake.getSnake();
+			for (ISnakeCell currentCell : wholeSnake.getCells()) {
+				if (snakeCellPosition.equals(eatenPosition)) {
 					// Current snake and current snakeCell are the eaten one
-					// eaten = true;
-
 					while (true) {
-						ISnakeCell previousTail = snake.getSnake().loseTail();
+						ISnakeCell previousTail = wholeSnake.loseTail();
 
 						if (previousTail.equals(currentCell)) {
 							// We have lost all cells between the eaten one and the tail
@@ -305,15 +302,15 @@ public class MultipleSnakeInRectangleOccupation implements IWorldOccupation<ISna
 						}
 					}
 
+					if (wholeSnake.getCells().isEmpty()) {
+						LOGGER.warn("This snake is dead (its head has been eaten)");
+					}
+
 					// No need to iterate through more snakes, as only one snake can live on a given cell
 					break;
 				}
 
-				// if (eaten) {
-				//
-				// }
-
-				headPosition = GameOfSnake.nextHead(headPosition, GameOfSnake.behind(currentCell));
+				snakeCellPosition = GameOfSnake.nextHead(snakeCellPosition, GameOfSnake.behind(currentCell));
 			}
 		});
 	}
