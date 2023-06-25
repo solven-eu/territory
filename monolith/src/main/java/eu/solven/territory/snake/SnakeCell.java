@@ -4,6 +4,8 @@ import java.util.LinkedList;
 import java.util.Random;
 import java.util.function.Supplier;
 
+import com.google.common.collect.Iterables;
+
 import eu.solven.territory.snake.ISnakeMarkers.IsSnake;
 import eu.solven.territory.snake.strategies.dummy.WholeSnake;
 import eu.solven.territory.snake.strategies.v1_cansmell.WholeSnake_SmellApplesLoseWeightWithTime;
@@ -23,6 +25,7 @@ public class SnakeCell extends SnakeOrApple implements ISnakeCell, IsSnake {
 	/**
 	 * Given the snake cells, index==0 is the head, incremented until the tail
 	 */
+	@Deprecated
 	final int cellIndex;
 
 	/**
@@ -38,9 +41,12 @@ public class SnakeCell extends SnakeOrApple implements ISnakeCell, IsSnake {
 		return head;
 	}
 
-	public static SnakeCell headToRight_canSmell(Supplier<Random> randomSupplier) {
-		WholeSnake wholeSnake = new WholeSnake_SmellApplesLoseWeightWithTime( randomSupplier, 1, new LinkedList<>());
-		SnakeCell head = new SnakeCell(wholeSnake, true, 0, 0);
+	public static SnakeCell eggCanSmell(Supplier<Random> randomSupplier) {
+		int hatchLeft = 10;
+		WholeSnake wholeSnake = new WholeSnake_SmellApplesLoseWeightWithTime(randomSupplier, hatchLeft);
+
+		int direction = randomSupplier.get().nextInt(4);
+		SnakeCell head = new SnakeCell(wholeSnake, true, 0, direction);
 		wholeSnake.appendAsHead(head);
 
 		return head;
@@ -61,4 +67,9 @@ public class SnakeCell extends SnakeOrApple implements ISnakeCell, IsSnake {
 	public SnakeCell editSnake(WholeSnake newSnake) {
 		return new SnakeCell(newSnake, isHead, cellIndex, direction);
 	}
+
+	public int getCellIndex() {
+		return Iterables.indexOf(getWhole().getCells(), c -> c == this);
+	}
+
 }

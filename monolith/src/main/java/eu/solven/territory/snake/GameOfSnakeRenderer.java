@@ -11,7 +11,9 @@ public class GameOfSnakeRenderer implements IGameRenderer {
 	@Override
 	public Color getCellColor(IWorldCell iAnimal) {
 		if (iAnimal instanceof SnakeCell snakeCell) {
-			if (snakeCell.isHead()) {
+			if (snakeCell.getWhole().isHatching()) {
+				return Color.red;
+			} else if (snakeCell.isHead()) {
 				return Color.blue;
 			} else {
 				return Color.green;

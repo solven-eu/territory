@@ -20,15 +20,15 @@ public class TestGameOfSnake {
 
 		SnakeInRectangleOccupation world = new SnakeInRectangleOccupation(map, snake, new TwoDimensionPosition(1, 1));
 		Assertions.assertThat(world.apples).isEmpty();
-		Assertions.assertThat(world.snake.getCapacity()).isEqualTo(1);
+		Assertions.assertThat(world.snake.getCellCapacity()).isEqualTo(1);
 
 		world.setValue(new TwoDimensionPosition(2, 1), new Apple());
 		Assertions.assertThat(world.apples).hasSize(1);
-		Assertions.assertThat(world.snake.getCapacity()).isEqualTo(1);
+		Assertions.assertThat(world.snake.getCellCapacity()).isEqualTo(1);
 
 		SnakeInRectangleOccupation nextWorld = (SnakeInRectangleOccupation) game.cycle(world);
 		Assertions.assertThat(nextWorld.apples).isEmpty();
-		Assertions.assertThat(nextWorld.snake.getCapacity()).isEqualTo(2);
+		Assertions.assertThat(nextWorld.snake.getCellCapacity()).isEqualTo(2);
 		Assertions.assertThat(Iterables.get(nextWorld.snake.getCells(), 0).isHead()).isTrue();
 		Assertions.assertThat(Iterables.get(nextWorld.snake.getCells(), 0).getDirection()).isEqualTo(0);
 		Assertions.assertThat(Iterables.get(nextWorld.snake.getCells(), 1).isHead()).isFalse();
@@ -45,15 +45,15 @@ public class TestGameOfSnake {
 
 		SnakeInRectangleOccupation world = new SnakeInRectangleOccupation(map, snake, new TwoDimensionPosition(2, 0));
 		Assertions.assertThat(world.apples).isEmpty();
-		Assertions.assertThat(world.snake.getCapacity()).isEqualTo(1);
+		Assertions.assertThat(world.snake.getCellCapacity()).isEqualTo(1);
 
 		world.setValue(new TwoDimensionPosition(2, 1), new Apple());
 		Assertions.assertThat(world.apples).hasSize(1);
-		Assertions.assertThat(world.snake.getCapacity()).isEqualTo(1);
+		Assertions.assertThat(world.snake.getCellCapacity()).isEqualTo(1);
 
 		SnakeInRectangleOccupation nextWorld = (SnakeInRectangleOccupation) game.cycle(world);
 		Assertions.assertThat(nextWorld.apples).isEmpty();
-		Assertions.assertThat(nextWorld.snake.getCapacity()).isEqualTo(2);
+		Assertions.assertThat(nextWorld.snake.getCellCapacity()).isEqualTo(2);
 		Assertions.assertThat(Iterables.get(nextWorld.snake.getCells(), 0).isHead()).isTrue();
 		Assertions.assertThat(Iterables.get(nextWorld.snake.getCells(), 0).getDirection()).isEqualTo(1);
 		Assertions.assertThat(Iterables.get(nextWorld.snake.getCells(), 1).isHead()).isFalse();

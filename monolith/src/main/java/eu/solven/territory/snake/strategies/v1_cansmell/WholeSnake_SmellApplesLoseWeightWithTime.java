@@ -1,6 +1,5 @@
 package eu.solven.territory.snake.strategies.v1_cansmell;
 
-import java.util.Deque;
 import java.util.LinkedList;
 import java.util.Random;
 import java.util.UUID;
@@ -10,6 +9,7 @@ import java.util.stream.IntStream;
 
 import eu.solven.territory.snake.ISnakeCell;
 import eu.solven.territory.snake.SnakeCell;
+import eu.solven.territory.snake.strategies.dummy.IBirthDecider;
 import eu.solven.territory.snake.strategies.dummy.WholeSnake;
 import eu.solven.territory.snake.v0_only_snake.IDirectionPicker;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
@@ -18,10 +18,16 @@ import lombok.ToString;
 
 @ToString
 public class WholeSnake_SmellApplesLoseWeightWithTime extends WholeSnake implements ICanSmell {
+	int hatchLeft = 0;
+
 	// hunger typically goes from 100 to 0
 	// 100 means the stomach is full
 	// 0 means we are starving
-	int hunger = 100;
+	int energy = 100;
+
+	// Each turn with energy == 0
+	// One may consider dead == (starve>0)
+	int starve = 0;
 
 	// How many step in the past we can remember the distance from the nearest apple
 	int memoryCapacity = 2;
@@ -33,22 +39,26 @@ public class WholeSnake_SmellApplesLoseWeightWithTime extends WholeSnake impleme
 	final Supplier<Random> randomSupplier;
 
 	public static WholeSnake babyCanSmell(Supplier<Random> randomSupplier) {
-		SnakeCell babySnakeHead = SnakeCell.headToRight_canSmell(randomSupplier);
+		SnakeCell babySnakeHead = SnakeCell.eggCanSmell(randomSupplier);
 
 		return babySnakeHead.getWhole();
 	}
 
-	public WholeSnake_SmellApplesLoseWeightWithTime(Supplier<Random> randomSupplier,
-			int capacity,
-			Deque<ISnakeCell> cells) {
-		this(UUID.randomUUID(), randomSupplier, capacity, cells);
+	@Override
+	public WholeSnake makeEgg() {
+		energy /= 2;
+
+		return babyCanSmell(randomSupplier);
 	}
 
-	private WholeSnake_SmellApplesLoseWeightWithTime(UUID uuid,
-			Supplier<Random> randomSupplier,
-			int capacity,
-			Deque<ISnakeCell> cells) {
-		super(uuid, capacity, cells);
+	public WholeSnake_SmellApplesLoseWeightWithTime(Supplier<Random> randomSupplier, int hatchLeft) {
+		this(UUID.randomUUID(), randomSupplier, 1);
+
+		this.hatchLeft = hatchLeft;
+	}
+
+	private WholeSnake_SmellApplesLoseWeightWithTime(UUID uuid, Supplier<Random> randomSupplier, int capacity) {
+		super(uuid, capacity, new LinkedList<>());
 
 		this.randomSupplier = randomSupplier;
 
@@ -56,10 +66,8 @@ public class WholeSnake_SmellApplesLoseWeightWithTime extends WholeSnake impleme
 	}
 
 	public WholeSnake copy() {
-		WholeSnake_SmellApplesLoseWeightWithTime newSnake = new WholeSnake_SmellApplesLoseWeightWithTime(this.getId(),
-				randomSupplier,
-				getCapacity(),
-				new LinkedList<>());
+		WholeSnake_SmellApplesLoseWeightWithTime newSnake =
+				new WholeSnake_SmellApplesLoseWeightWithTime(this.getId(), randomSupplier, getCellCapacity());
 
 		LinkedList<ISnakeCell> newCells = getCells().stream()
 				.map(cell -> cell.editSnake(newSnake))
@@ -69,7 +77,10 @@ public class WholeSnake_SmellApplesLoseWeightWithTime extends WholeSnake impleme
 
 		distances.forEach(newSnake::smells);
 
-		newSnake.hunger = hunger;
+		newSnake.memoryCapacity = memoryCapacity;
+		newSnake.hatchLeft = hatchLeft;
+		newSnake.energy = energy;
+		newSnake.starve = starve;
 
 		return newSnake;
 	}
@@ -80,17 +91,57 @@ public class WholeSnake_SmellApplesLoseWeightWithTime extends WholeSnake impleme
 		distances.add(distanceFromApple);
 	}
 
-	public void loseWeight() {
-		hunger--;
+	@Override
+	public void eatSomething() {
+		super.eatSomething();
 
-		if (hunger == 0) {
-			// The snake eats itself: it refills the hunger
-			loseTail();
-			hunger += 100;
+		energy = 100;
+		starve = 0;
+	}
+
+	public void spendEnergy() {
+		if (isHatching()) {
+			hatchLeft--;
+		} else {
+			if (energy > 0) {
+				energy--;
+			}
+
+			if (energy == 0) {
+				if (getCells().size() == 1) {
+					starve++;
+				} else {
+					// The snake eats it tail: it refills the hunger
+					loseTail();
+					eatSomething();
+				}
+			}
 		}
 	}
 
 	public IDirectionPicker getDirectionPicker() {
-		return new DirectionBasedOnSmells(randomSupplier, distances, getCells());
+		if (isHatching()) {
+			return (map, context, position, currentHead) -> IDirectionPicker.NO_DIRECTION;
+		} else {
+			return new DirectionBasedOnSmells(randomSupplier, distances, getCells());
+		}
+	}
+
+	public IBirthDecider getBirthDecider() {
+		return () -> {
+			if (isHatching()) {
+				// An egg can not give birth
+				return false;
+			} else if (getCellCapacity() >= 5 && energy >= 80) {
+				// Giving birth will /2 energy
+				return true;
+			} else {
+				return false;
+			}
+		};
+	}
+
+	public boolean isHatching() {
+		return hatchLeft > 0;
 	}
 }

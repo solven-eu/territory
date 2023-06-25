@@ -144,7 +144,7 @@ public class GameOfSnake_Multiple implements IExpansionCycleRule<ISnakeWorldItem
 			// Losing its tail, until length==1 shall unlock the Snake, except if world is size== 1
 			LOGGER.info(
 					"Snake can not move: it loses weight (potentially losing its tail, potentially freeing the way");
-			copySnake.loseWeight();
+			copySnake.spendEnergy();
 		} else {
 			newHeadPosition = nextHead(position, newDirection);
 
@@ -157,11 +157,15 @@ public class GameOfSnake_Multiple implements IExpansionCycleRule<ISnakeWorldItem
 				// The eaten snake may be itself, or another snake
 				worldCopy.snakeEaten(newHeadPosition);
 			} else {
-				copySnake.loseWeight();
+				copySnake.spendEnergy();
 			}
 
 			worldCopy.newHead(currentHead, newDirection);
 			worldCopy.headPosition(currentHead, newHeadPosition);
+		}
+
+		if (currentHead.getWhole().getBirthDecider().shouldTryGivingBirth()) {
+			worldCopy.tryGiveBirth(copySnake, context);
 		}
 
 		if (copySnake instanceof ICanSmell canSmell) {
@@ -190,7 +194,6 @@ public class GameOfSnake_Multiple implements IExpansionCycleRule<ISnakeWorldItem
 			} else {
 				snakeCopy.setValue(randomPosition, new Apple());
 			}
-
 		}
 	}
 

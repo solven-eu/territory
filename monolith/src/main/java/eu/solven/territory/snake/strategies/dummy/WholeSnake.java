@@ -16,7 +16,7 @@ public class WholeSnake {
 	final UUID uuid;
 
 	// May grow when eating fruits
-	int capacity = 1;
+	int cellCapacity = 1;
 
 	final Deque<ISnakeCell> cells;
 
@@ -26,13 +26,17 @@ public class WholeSnake {
 		return babySnakeHead.getWhole();
 	}
 
+	public WholeSnake makeEgg() {
+		return baby();
+	}
+
 	public WholeSnake(int capacity, Deque<ISnakeCell> cells) {
 		this(UUID.randomUUID(), capacity, cells);
 	}
 
 	protected WholeSnake(UUID uuid, int capacity, Deque<ISnakeCell> cells) {
 		this.uuid = uuid;
-		this.capacity = capacity;
+		this.cellCapacity = capacity;
 		this.cells = cells;
 	}
 
@@ -49,7 +53,7 @@ public class WholeSnake {
 			throw new IllegalStateException("Can not append a head is there is already one");
 		}
 
-		if (cells.size() >= getCapacity()) {
+		if (cells.size() >= getCellCapacity()) {
 			// Lose tail before adding new head
 			loseTail();
 		}
@@ -57,7 +61,7 @@ public class WholeSnake {
 		cells.addFirst(head);
 	}
 
-	public void loseWeight() {
+	public void spendEnergy() {
 		loseTail();
 	}
 
@@ -66,7 +70,7 @@ public class WholeSnake {
 	}
 
 	public WholeSnake copy() {
-		WholeSnake newSnake = new WholeSnake(uuid, getCapacity(), new LinkedList<>());
+		WholeSnake newSnake = new WholeSnake(uuid, getCellCapacity(), new LinkedList<>());
 
 		LinkedList<ISnakeCell> newCells =
 				cells.stream().map(cell -> cell.editSnake(newSnake)).collect(Collectors.toCollection(LinkedList::new));
@@ -93,15 +97,27 @@ public class WholeSnake {
 	}
 
 	public void eatSomething() {
-		capacity = getCapacity() + 1;
+		cellCapacity = getCellCapacity() + 1;
 	}
 
-	public int getCapacity() {
-		return capacity;
+	public int getCellCapacity() {
+		return cellCapacity;
 	}
 
 	@Nonnull
 	public UUID getId() {
 		return uuid;
+	}
+
+	public boolean isHatching() {
+		return false;
+	}
+
+	public void decreaseCellCapacity() {
+		cellCapacity--;
+	}
+
+	public IBirthDecider getBirthDecider() {
+		return () -> false;
 	}
 }

@@ -27,4 +27,5 @@ public class PositionnedSnake {
 	public void setPosition(TwoDimensionPosition newHeadPosition) {
 		refHeadPosition.set(newHeadPosition);
 	}
+	
 }

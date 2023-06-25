@@ -1,5 +1,6 @@
 package eu.solven.territory.snake.strategies.v2_multiplesnakes;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -20,6 +21,7 @@ import eu.solven.territory.snake.Apple;
 import eu.solven.territory.snake.ISnakeCell;
 import eu.solven.territory.snake.ISnakeMarkers.IsApple;
 import eu.solven.territory.snake.ISnakeWorldItem;
+import eu.solven.territory.snake.SnakeTurnContext;
 import eu.solven.territory.snake.strategies.dummy.WholeSnake;
 import eu.solven.territory.snake.v0_only_snake.GameOfSnake;
 import eu.solven.territory.two_dimensions.IIsRectangle;
@@ -292,12 +294,13 @@ public class MultipleSnakeInRectangleOccupation implements IWorldOccupation<ISna
 					// Current snake and current snakeCell are the eaten one
 					while (true) {
 						ISnakeCell previousTail = wholeSnake.loseTail();
+						wholeSnake.decreaseCellCapacity();
 
 						if (previousTail.equals(currentCell)) {
 							// We have lost all cells between the eaten one and the tail
 							break;
 						} else {
-							// The tail was not yet the eater cell
+							// The tail was not yet the eaten cell
 							LOGGER.debug("There is more dead snakeCells");
 						}
 					}
@@ -313,5 +316,30 @@ public class MultipleSnakeInRectangleOccupation implements IWorldOccupation<ISna
 				snakeCellPosition = GameOfSnake.nextHead(snakeCellPosition, GameOfSnake.behind(currentCell));
 			}
 		});
+	}
+
+	public void tryGiveBirth(WholeSnake parent, SnakeTurnContext context) {
+		PositionnedSnake parentSnake = positionnedSnakes.get(parent.getId());
+
+		Collection<ISnakeCell> cells = parentSnake.getSnake().getCells();
+		if (cells.size() <= 1) {
+			LOGGER.warn("Too small to give birth");
+		} else {
+			TwoDimensionPosition parentCellPosition = parentSnake.getHeadPosition();
+
+			for (ISnakeCell currentCell : cells) {
+				// Walk-back the snake
+				parentCellPosition = GameOfSnake.nextHead(parentCellPosition, GameOfSnake.behind(currentCell));
+			}
+			
+			if (context.getOccupiedByApple().contains(parentCellPosition)
+					|| context.getOccupiedBySnake().contains(parentCellPosition)) {
+				// The egg potential position is occupied
+			} else {
+				PositionnedSnake egg = new PositionnedSnake(parent.makeEgg(), parentCellPosition);
+				positionnedSnakes.put(egg.getSnake().getId(), egg);
+			}
+
+		}
 	}
 }

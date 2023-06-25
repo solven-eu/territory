@@ -101,7 +101,7 @@ public class GameOfSnake implements IExpansionCycleRule<ISnakeWorldItem> {
 			// Losing its tail, until length==1 shall unlock the Snake, except if world is size== 1
 			LOGGER.info(
 					"Snake can not move: it loses weight (potentially losing its tail, potentially freeing the way");
-			snakeCopy.getSnake().loseWeight();
+			snakeCopy.getSnake().spendEnergy();
 		} else {
 			newHeadPosition = nextHead(position, newDirection);
 
@@ -109,7 +109,7 @@ public class GameOfSnake implements IExpansionCycleRule<ISnakeWorldItem> {
 				snakeCopy.appleConsumed(newHeadPosition);
 				snakeCopy.getSnake().eatSomething();
 			} else {
-				snakeCopy.getSnake().loseWeight();
+				snakeCopy.getSnake().spendEnergy();
 			}
 
 			snakeCopy.newHead(currentHead, newDirection);
