@@ -107,7 +107,7 @@ public class GameOfSnake implements IExpansionCycleRule<ISnakeWorldItem> {
 
 			if (context.isApple(newHeadPosition)) {
 				snakeCopy.appleConsumed(newHeadPosition);
-				snakeCopy.getSnake().eatApple();
+				snakeCopy.getSnake().eatSomething();
 			} else {
 				snakeCopy.getSnake().loseWeight();
 			}
@@ -183,12 +183,6 @@ public class GameOfSnake implements IExpansionCycleRule<ISnakeWorldItem> {
 
 	public static int behind(ISnakeCell head) {
 		return (head.getDirection() + 2) % 4;
-	}
-
-	public static boolean canBeNextHead(ITerritoryMap map, SnakeTurnContext context, TwoDimensionPosition position) {
-		Set<ICellPosition> occupiedBySnake = context.getOccupiedBySnake();
-
-		return !map.isOutOfWorld(position) && !occupiedBySnake.contains(position);
 	}
 
 	public static TwoDimensionPosition nextHead(ICellPosition position, int direction) {

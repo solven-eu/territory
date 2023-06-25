@@ -61,8 +61,8 @@ public class WholeSnake {
 		loseTail();
 	}
 
-	public void loseTail() {
-		cells.pollLast();
+	public ISnakeCell loseTail() {
+		return cells.pollLast();
 	}
 
 	public WholeSnake copy() {
@@ -89,10 +89,10 @@ public class WholeSnake {
 	}
 
 	public IDirectionPicker getDirectionPicker() {
-		return new LeftElseRight();
+		return new LeftElseRight_NeverEatSnake();
 	}
 
-	public void eatApple() {
+	public void eatSomething() {
 		capacity = getCapacity() + 1;
 	}
 

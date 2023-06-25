@@ -281,4 +281,40 @@ public class MultipleSnakeInRectangleOccupation implements IWorldOccupation<ISna
 	private PositionnedSnake getPositionnedHead(ISnakeCell currentHead) {
 		return positionnedSnakes.get(currentHead.getWhole().getId());
 	}
+
+	public void snakeEaten(TwoDimensionPosition newHeadPosition) {
+		positionnedSnakes.values().forEach(snake -> {
+			TwoDimensionPosition headPosition = snake.getHeadPosition();
+
+			// boolean eaten = false;
+
+			for (ISnakeCell currentCell : snake.getSnake().getCells()) {
+				if (headPosition.equals(newHeadPosition)) {
+					// Current snake and current snakeCell are the eaten one
+					// eaten = true;
+
+					while (true) {
+						ISnakeCell previousTail = snake.getSnake().loseTail();
+
+						if (previousTail.equals(currentCell)) {
+							// We have lost all cells between the eaten one and the tail
+							break;
+						} else {
+							// The tail was not yet the eater cell
+							LOGGER.debug("There is more dead snakeCells");
+						}
+					}
+
+					// No need to iterate through more snakes, as only one snake can live on a given cell
+					break;
+				}
+
+				// if (eaten) {
+				//
+				// }
+
+				headPosition = GameOfSnake.nextHead(headPosition, GameOfSnake.behind(currentCell));
+			}
+		});
+	}
 }

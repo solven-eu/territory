@@ -2,6 +2,7 @@ package eu.solven.territory.snake.v0_only_snake;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
@@ -61,41 +62,79 @@ public class GameOfSnake_Multiple implements IExpansionCycleRule<ISnakeWorldItem
 		return rawCopy;
 	}
 
-	private IWorldOccupation<ISnakeWorldItem> rawCycle(IWorldOccupation<ISnakeWorldItem> occupation) {
-		IWorldOccupation<ISnakeWorldItem> rawCopy = occupation.mutableCopy();
-
+	/**
+	 * We cycle through snakes to let the world progress. If the world holds multiple snakes, we need to be careful, as
+	 * two snakes may be moving to the same cell. It seems simpler to process each snake one at a time, to prevent snake
+	 * believing they are moving both to an empty cell.
+	 * 
+	 * @param occupation
+	 * @return
+	 */
+	private IWorldOccupation<ISnakeWorldItem> rawCycle(IWorldOccupation<ISnakeWorldItem> initialOccupation) {
 		int includeSelfRadius = 1;
 		int gameOfLifeRadius = 1;
-		IMapWindow<ISnakeWorldItem> windowBuffer = occupation.makeWindowBuffer(includeSelfRadius + gameOfLifeRadius);
+		IMapWindow<ISnakeWorldItem> windowBuffer =
+				initialOccupation.makeWindowBuffer(includeSelfRadius + gameOfLifeRadius);
 
-		SnakeTurnContext context = buildContext(occupation, windowBuffer);
+		// A world cycle allows each snake to move once
+		Set<Object> snakeHavingPlayed = new HashSet<>();
 
-		if (rawCopy instanceof MultipleSnakeInRectangleOccupation snakeCopy) {
-			growApples(context, snakeCopy);
+		IWorldOccupation<ISnakeWorldItem> rawWorldCopy = initialOccupation;
+		while (true) {
+			AtomicBoolean oneSnakeMoved = new AtomicBoolean();
 
-			// Process each snake heads
-			occupation.forEachLiveCell(ISnakeMarkers.IsSnake.class, windowBuffer, position -> {
-				SnakeCell currentHead = (SnakeCell) windowBuffer.getCenter();
-				if (!currentHead.isHead()) {
-					return;
-				}
+			IWorldOccupation<ISnakeWorldItem> previousSubCycle = rawWorldCopy;
+			rawWorldCopy = rawWorldCopy.mutableCopy();
 
-				snakeAction(context, snakeCopy, position, currentHead);
-			});
+			SnakeTurnContext context = buildContext(previousSubCycle, windowBuffer);
+
+			if (rawWorldCopy instanceof MultipleSnakeInRectangleOccupation worldCopy) {
+				growApples(context, worldCopy);
+
+				// Process each snake heads
+				previousSubCycle.forEachLiveCell(ISnakeMarkers.IsSnake.class, windowBuffer, position -> {
+					if (oneSnakeMoved.get()) {
+						// We allow a single snake to move for per sub-cycle
+						return;
+					}
+
+					SnakeCell currentHead = (SnakeCell) windowBuffer.getCenter();
+					if (!currentHead.isHead()) {
+						return;
+					}
+
+					if (snakeHavingPlayed.add(currentHead.getWhole().getId())) {
+						oneSnakeMoved.set(true);
+						snakeAction(context, worldCopy, position, currentHead);
+					} else {
+						// This snake already moved in this cycle
+					}
+
+				});
+			}
+
+			if (!oneSnakeMoved.get()) {
+				// No snake moved in this new sub-cycle: all snake have moved in this cycle
+				break;
+			}
 		}
 
-		return rawCopy;
+		if (rawWorldCopy == initialOccupation) {
+			LOGGER.warn("The world did not change, meaning it would not change ever. Is it a dead world?");
+		}
+
+		return rawWorldCopy;
 	}
 
 	private void snakeAction(SnakeTurnContext context,
-			MultipleSnakeInRectangleOccupation snakeCopy,
+			MultipleSnakeInRectangleOccupation worldCopy,
 			ICellPosition position,
 			SnakeCell currentHead) {
 		IDirectionPicker directionPicker = currentHead.getWhole().getDirectionPicker();
 
 		int newDirection = directionPicker.pickDirection(map, context, position, currentHead);
 
-		ISnakeCell copyHead = snakeCopy.getHead(currentHead);
+		ISnakeCell copyHead = worldCopy.getHead(currentHead);
 		WholeSnake copySnake = copyHead.getWhole();
 
 		TwoDimensionPosition newHeadPosition;
@@ -110,14 +149,19 @@ public class GameOfSnake_Multiple implements IExpansionCycleRule<ISnakeWorldItem
 			newHeadPosition = nextHead(position, newDirection);
 
 			if (context.isApple(newHeadPosition)) {
-				snakeCopy.appleConsumed(newHeadPosition);
-				copySnake.eatApple();
+				worldCopy.appleConsumed(newHeadPosition);
+				copySnake.eatSomething();
+			} else if (context.getOccupiedBySnake().contains(newHeadPosition)) {
+				// The eater snake grows anyway (even if eating itself)
+				copySnake.eatSomething();
+				// The eaten snake may be itself, or another snake
+				worldCopy.snakeEaten(newHeadPosition);
 			} else {
 				copySnake.loseWeight();
 			}
 
-			snakeCopy.newHead(currentHead, newDirection);
-			snakeCopy.headPosition(currentHead, newHeadPosition);
+			worldCopy.newHead(currentHead, newDirection);
+			worldCopy.headPosition(currentHead, newHeadPosition);
 		}
 
 		if (copySnake instanceof ICanSmell canSmell) {

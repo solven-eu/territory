@@ -82,8 +82,12 @@ public class Snake_v2MultipleController extends AGameController<ISnakeWorldItem>
 				new PositionnedSnake(WholeSnake_SmellApplesLoseWeightWithTime.babyCanSmell(randomSupplier),
 						new TwoDimensionPosition(1 + squareMap.getWidth() / 2, 1 + squareMap.getHeight() / 2));
 
+		PositionnedSnake thirdSnake =
+				new PositionnedSnake(WholeSnake_SmellApplesLoseWeightWithTime.babyCanSmell(randomSupplier),
+						new TwoDimensionPosition(0, 0));
+
 		MultipleSnakeInRectangleOccupation withBaby =
-				new MultipleSnakeInRectangleOccupation(squareMap, firstSnake, secondSnake);
+				new MultipleSnakeInRectangleOccupation(squareMap, firstSnake, secondSnake, thirdSnake);
 
 		return withBaby;
 	}
