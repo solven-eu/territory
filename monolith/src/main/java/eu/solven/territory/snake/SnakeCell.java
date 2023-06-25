@@ -1,3 +1,18 @@
+/*
+ * Copyright 2023 Benoit Lacelle - SOLVEN
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package eu.solven.territory.snake;
 
 import java.util.LinkedList;
@@ -35,18 +50,18 @@ public class SnakeCell extends SnakeOrApple implements ISnakeCell, IsSnake {
 
 	public static SnakeCell headToRight() {
 		WholeSnake wholeSnake = new WholeSnake(1, new LinkedList<>());
-		SnakeCell head = new SnakeCell(wholeSnake, true, 0, 0);
+		var head = new SnakeCell(wholeSnake, true, 0, 0);
 		wholeSnake.appendAsHead(head);
 
 		return head;
 	}
 
 	public static SnakeCell eggCanSmell(Supplier<Random> randomSupplier) {
-		int hatchLeft = 10;
+		var hatchLeft = 10;
 		WholeSnake wholeSnake = new WholeSnake_SmellApplesLoseWeightWithTime(randomSupplier, hatchLeft);
 
-		int direction = randomSupplier.get().nextInt(4);
-		SnakeCell head = new SnakeCell(wholeSnake, true, 0, direction);
+		var direction = randomSupplier.get().nextInt(4);
+		var head = new SnakeCell(wholeSnake, true, 0, direction);
 		wholeSnake.appendAsHead(head);
 
 		return head;
@@ -56,10 +71,10 @@ public class SnakeCell extends SnakeOrApple implements ISnakeCell, IsSnake {
 		ISnakeCell previousHead = whole.loseHead();
 
 		int previousHeadCellIndex = previousHead.getCellIndex();
-		SnakeCell behindNewHead = new SnakeCell(whole, false, previousHeadCellIndex, previousHead.getDirection());
+		var behindNewHead = new SnakeCell(whole, false, previousHeadCellIndex, previousHead.getDirection());
 		whole.appendAsHead(behindNewHead);
 
-		SnakeCell futureHead = new SnakeCell(whole, true, previousHeadCellIndex + 1, direction);
+		var futureHead = new SnakeCell(whole, true, previousHeadCellIndex + 1, direction);
 		whole.appendAsHead(futureHead);
 		// return futureHead;
 	}
