@@ -15,15 +15,10 @@
  */
 package eu.solven.territory.snake;
 
-import java.util.LinkedList;
-import java.util.Random;
-import java.util.function.Supplier;
-
 import com.google.common.collect.Iterables;
 
 import eu.solven.territory.snake.ISnakeMarkers.IsSnake;
 import eu.solven.territory.snake.strategies.dummy.WholeSnake;
-import eu.solven.territory.snake.strategies.v1_cansmell.WholeSnake_SmellApplesLoseWeightWithTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
