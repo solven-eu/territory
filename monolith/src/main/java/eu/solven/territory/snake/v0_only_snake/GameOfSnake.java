@@ -133,7 +133,7 @@ public class GameOfSnake implements IExpansionCycleRule<ISnakeWorldItem> {
 		if (snakeCopy.getSnake() instanceof ICanSmell canSmell) {
 			double distance = distance(newHeadPosition, context.getOccupiedByApple());
 
-			canSmell.smells(distance);
+			canSmell.smellsApple(distance);
 		}
 	}
 

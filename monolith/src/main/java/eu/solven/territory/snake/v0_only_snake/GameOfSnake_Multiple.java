@@ -186,7 +186,7 @@ public class GameOfSnake_Multiple implements IExpansionCycleRule<ISnakeWorldItem
 		if (copySnake instanceof ICanSmell canSmell) {
 			double distance = distance(newHeadPosition, context.getOccupiedByApple());
 
-			canSmell.smells(distance);
+			canSmell.smellsApple(distance);
 		}
 	}
 

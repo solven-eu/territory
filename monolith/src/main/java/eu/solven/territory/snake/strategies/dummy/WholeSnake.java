@@ -35,8 +35,14 @@ public class WholeSnake {
 
 	final Deque<ISnakeCell> cells;
 
+	private static SnakeCell headToRight() {
+		WholeSnake wholeSnake = new WholeSnake(1, new LinkedList<>());
+
+		return SnakeCell.newSnake(wholeSnake, 0);
+	}
+
 	public static WholeSnake baby() {
-		SnakeCell babySnakeHead = SnakeCell.headToRight();
+		SnakeCell babySnakeHead = headToRight();
 
 		return babySnakeHead.getWhole();
 	}

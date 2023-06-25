@@ -48,19 +48,11 @@ public class SnakeCell extends SnakeOrApple implements ISnakeCell, IsSnake {
 	 */
 	final int direction;
 
-	public static SnakeCell headToRight() {
-		WholeSnake wholeSnake = new WholeSnake(1, new LinkedList<>());
-		var head = new SnakeCell(wholeSnake, true, 0, 0);
-		wholeSnake.appendAsHead(head);
+	public static SnakeCell newSnake(WholeSnake wholeSnake, int direction) {
+		if (!wholeSnake.getCells().isEmpty()) {
+			throw new IllegalArgumentException("We expect an empty wholeSnake");
+		}
 
-		return head;
-	}
-
-	public static SnakeCell eggCanSmell(Supplier<Random> randomSupplier) {
-		var hatchLeft = 10;
-		WholeSnake wholeSnake = new WholeSnake_SmellApplesLoseWeightWithTime(randomSupplier, hatchLeft);
-
-		var direction = randomSupplier.get().nextInt(4);
 		var head = new SnakeCell(wholeSnake, true, 0, direction);
 		wholeSnake.appendAsHead(head);
 

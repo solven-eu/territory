@@ -45,16 +45,24 @@ public class WholeSnake_SmellApplesLoseWeightWithTime extends WholeSnake impleme
 	int starve = 0;
 
 	// How many step in the past we can remember the distance from the nearest apple
-	int memoryCapacity = 2;
+	int memoryCapacityForApple = 2;
 
 	// `[0]` holds the most recent distance from food
 	// `[4]` holds the distance from food 4 steps ago
-	final DoubleList distances = new DoubleArrayList();
+	final DoubleList appleDistances = new DoubleArrayList();
 
-	final Supplier<Random> randomSupplier;
+	protected final Supplier<Random> randomSupplier;
+
+	private static SnakeCell eggCanSmell(Supplier<Random> randomSupplier) {
+		var hatchLeft = 10;
+		WholeSnake wholeSnake = new WholeSnake_SmellApplesLoseWeightWithTime(randomSupplier, hatchLeft);
+
+		var direction = randomSupplier.get().nextInt(4);
+		return SnakeCell.newSnake(wholeSnake, direction);
+	}
 
 	public static WholeSnake babyCanSmell(Supplier<Random> randomSupplier) {
-		SnakeCell babySnakeHead = SnakeCell.eggCanSmell(randomSupplier);
+		SnakeCell babySnakeHead = eggCanSmell(randomSupplier);
 
 		return babySnakeHead.getWhole();
 	}
@@ -72,37 +80,43 @@ public class WholeSnake_SmellApplesLoseWeightWithTime extends WholeSnake impleme
 		this.hatchLeft = hatchLeft;
 	}
 
-	private WholeSnake_SmellApplesLoseWeightWithTime(UUID uuid, Supplier<Random> randomSupplier, int capacity) {
+	protected WholeSnake_SmellApplesLoseWeightWithTime(UUID uuid, Supplier<Random> randomSupplier, int capacity) {
 		super(uuid, capacity, new LinkedList<>());
 
 		this.randomSupplier = randomSupplier;
 
-		IntStream.range(0, memoryCapacity).forEach(i -> distances.add(Double.MAX_VALUE));
+		IntStream.range(0, memoryCapacityForApple).forEach(i -> appleDistances.add(Double.MAX_VALUE));
 	}
 
 	public WholeSnake copy() {
 		var newSnake = new WholeSnake_SmellApplesLoseWeightWithTime(this.getId(), randomSupplier, getCellCapacity());
 
-		LinkedList<ISnakeCell> newCells = getCells().stream()
-				.map(cell -> cell.editSnake(newSnake))
-				.collect(Collectors.toCollection(LinkedList::new));
-
-		newCells.forEach(newSnake::appendToTail);
-
-		distances.forEach(newSnake::smells);
-
-		newSnake.memoryCapacity = memoryCapacity;
-		newSnake.hatchLeft = hatchLeft;
-		newSnake.energy = energy;
-		newSnake.starve = starve;
+		copy(this, newSnake);
 
 		return newSnake;
 	}
 
+	public static void copy(WholeSnake_SmellApplesLoseWeightWithTime from,
+			WholeSnake_SmellApplesLoseWeightWithTime to) {
+		LinkedList<ISnakeCell> newCells = from.getCells()
+				.stream()
+				.map(cell -> cell.editSnake(to))
+				.collect(Collectors.toCollection(LinkedList::new));
+
+		newCells.forEach(to::appendToTail);
+
+		from.appleDistances.forEach(to::smellsApple);
+
+		to.memoryCapacityForApple = from.memoryCapacityForApple;
+		to.hatchLeft = from.hatchLeft;
+		to.energy = from.energy;
+		to.starve = from.starve;
+	}
+
 	@Override
-	public void smells(double distanceFromApple) {
-		distances.removeDouble(0);
-		distances.add(distanceFromApple);
+	public void smellsApple(double distanceFromApple) {
+		appleDistances.removeDouble(0);
+		appleDistances.add(distanceFromApple);
 	}
 
 	@Override
@@ -137,7 +151,7 @@ public class WholeSnake_SmellApplesLoseWeightWithTime extends WholeSnake impleme
 		if (isHatching()) {
 			return (map, context, position, currentHead) -> IDirectionPicker.NO_DIRECTION;
 		} else {
-			return new DirectionBasedOnSmells(randomSupplier, distances, getCells());
+			return new DirectionBasedOnSmells(randomSupplier, appleDistances, getCells());
 		}
 	}
 
